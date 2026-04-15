@@ -1,4 +1,4 @@
-import { getMarketData } from "../lib/supabase-data";
+import { getMarketData } from "../lib/supabase-data.js";
 
 export default async function handler(_req: any, res: any) {
   try {
@@ -9,4 +9,3 @@ export default async function handler(_req: any, res: any) {
     res.status(500).json({ error: "Failed to fetch market data from Supabase" });
   }
 }
-

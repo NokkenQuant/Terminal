@@ -1,4 +1,4 @@
-import { getAnalysis } from "../../lib/supabase-data";
+import { getAnalysis } from "../../lib/supabase-data.js";
 
 export default async function handler(req: any, res: any) {
   try {
@@ -10,4 +10,3 @@ export default async function handler(req: any, res: any) {
     res.status(500).json({ error: "Failed to fetch analysis data from Supabase" });
   }
 }
-

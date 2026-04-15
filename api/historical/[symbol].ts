@@ -1,4 +1,4 @@
-import { getHistorical } from "../../lib/supabase-data";
+import { getHistorical } from "../../lib/supabase-data.js";
 
 export default async function handler(req: any, res: any) {
   try {
@@ -12,4 +12,3 @@ export default async function handler(req: any, res: any) {
     res.status(500).json({ error: "Failed to fetch historical data from Supabase" });
   }
 }
-
