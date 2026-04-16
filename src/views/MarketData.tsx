@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Search, Filter, Download, Bell, Star, Ship, Info, RefreshCw, History, X } from 'lucide-react';
+import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
 interface CommodityData {
   name: string;
@@ -12,6 +13,15 @@ interface CommodityData {
   changePercent: number;
 }
 
+interface HistoricalPoint {
+  date: string;
+  open?: number | null;
+  high?: number | null;
+  low?: number | null;
+  close?: number | null;
+  volume?: number | null;
+}
+
 export default function MarketData() {
   const [data, setData] = useState<CommodityData[]>([]);
   const [searchAsset, setSearchAsset] = useState('');
@@ -21,13 +31,22 @@ export default function MarketData() {
   const [selectedAsset, setSelectedAsset] = useState<CommodityData | null>(null);
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [historicalData, setHistoricalData] = useState<HistoricalPoint[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const assetOptions = Array.from(new Set(data.map((d) => d.asset))).sort();
   const filteredData = searchAsset
     ? data.filter((d) => d.asset.toLowerCase().includes(searchAsset.toLowerCase()))
     : data;
+  const chartData = [...historicalData]
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map((point) => ({
+      date: new Date(point.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      close: point.close ?? null,
+      high: point.high ?? null,
+      low: point.low ?? null,
+      volume: point.volume ?? null,
+    }));
 
   const fetchData = async (selectedPeriod: string) => {
     setLoading(true);
@@ -210,7 +229,14 @@ export default function MarketData() {
                   </td>
                 </tr>
               ) : filteredData.map((c) => (
-                <tr key={`${c.asset}-${c.ticker}`} className="hover:bg-[#333533] transition-colors group">
+                <tr
+                  key={`${c.asset}-${c.ticker}`}
+                  className="hover:bg-[#333533] transition-colors group cursor-pointer"
+                  onClick={() => {
+                    setSelectedAsset(c);
+                    fetchHistoricalData(c.asset);
+                  }}
+                >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className={`w-2 h-8 rounded-full ${c.change > 0 ? 'bg-[#a1d494]' : 'bg-[#ffb4ab]'}`}></div>
@@ -233,7 +259,8 @@ export default function MarketData() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
-                        onClick={() => {
+                        onClick={(event) => {
+                          event.stopPropagation();
                           setSelectedAsset(c);
                           setShowHistoryModal(true);
                           fetchHistoricalData(c.asset);
@@ -253,6 +280,62 @@ export default function MarketData() {
           </table>
         </div>
       </section>
+
+      {selectedAsset && (
+        <section className="bg-[#1e201e] rounded-2xl border border-[#434843]/10 p-5 md:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-headline font-bold text-[#e2e3df]">
+                Grafico de Cotas: {selectedAsset.name} ({selectedAsset.asset})
+              </h2>
+              <p className="text-xs text-[#c3c8c1]">Clique em outro ativo na tabela para trocar o grafico.</p>
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-widest text-[#c3c8c1]">Variacao Diaria</div>
+              <div className={`text-base font-bold tabular-nums ${selectedAsset.change >= 0 ? 'text-[#a1d494]' : 'text-[#ffb4ab]'}`}>
+                {selectedAsset.change >= 0 ? '+' : ''}{selectedAsset.change.toFixed(2)} ({selectedAsset.changePercent >= 0 ? '+' : ''}{selectedAsset.changePercent.toFixed(2)}%)
+              </div>
+            </div>
+          </div>
+
+          <div className="h-[340px] bg-[#0d0f0d] rounded-xl border border-[#434843]/20 p-2">
+            {loadingHistory ? (
+              <div className="h-full flex items-center justify-center text-[#c3c8c1] text-sm">
+                <RefreshCw className="animate-spin mr-2" size={16} />
+                Carregando serie historica...
+              </div>
+            ) : chartData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-[#c3c8c1] text-sm">
+                Sem historico disponivel para o ativo selecionado.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 8, right: 18, left: 8, bottom: 8 }}>
+                  <defs>
+                    <linearGradient id="tradingArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4ec9b0" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#4ec9b0" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="#2a2d2a" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: '#9da39d', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#2a2d2a' }} minTickGap={24} />
+                  <YAxis tick={{ fill: '#9da39d', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#2a2d2a' }} domain={['auto', 'auto']} width={70} />
+                  <Tooltip
+                    contentStyle={{ background: '#121412', border: '1px solid #2a2d2a', borderRadius: 8, color: '#e2e3df' }}
+                    labelStyle={{ color: '#c3c8c1', fontSize: 12 }}
+                    formatter={(value: number | null, name: string) => {
+                      if (value == null) return ['-', name];
+                      const labelMap: Record<string, string> = { close: 'Fechamento', high: 'Maxima', low: 'Minima', volume: 'Volume' };
+                      return [name === 'volume' ? value.toLocaleString() : value.toFixed(2), labelMap[name] || name];
+                    }}
+                  />
+                  <Area type="monotone" dataKey="close" stroke="#4ec9b0" strokeWidth={2} fill="url(#tradingArea)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Grade de Insights Inferior */}
       <section className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">

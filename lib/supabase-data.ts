@@ -129,25 +129,52 @@ function computeSma(closes: number[], period: number): number {
 }
 
 export async function getMarketData() {
+  const { pricesTable } = env();
   const latestTable = process.env.SUPABASE_LATEST_PRICES_VIEW || "agro_latest_prices";
-  const params = new URLSearchParams({
+  const latestParams = new URLSearchParams({
     select: "trade_date,asset,ticker,exchange,description,close",
     order: "asset.asc",
   });
-  const rows = await fetchPaged<LatestPriceRow>(latestTable, params, 1000);
-  return rows
+  const latestRows = await fetchPaged<LatestPriceRow>(latestTable, latestParams, 1000);
+
+  const priceParams = new URLSearchParams({
+    select: "asset,trade_date,close",
+    order: "asset.asc,trade_date.desc",
+  });
+  const priceRows = await fetchPaged<PriceRow>(pricesTable, priceParams, 1000);
+  const lastTwoByAsset = new Map<string, number[]>();
+
+  for (const row of priceRows) {
+    if (!row.asset || row.close == null) continue;
+    const values = lastTwoByAsset.get(row.asset) || [];
+    if (values.length < 2) {
+      values.push(toNum(row.close));
+      lastTwoByAsset.set(row.asset, values);
+    }
+  }
+
+  return latestRows
     .filter((row) => row.asset && row.close != null)
     .map((row) => {
       const asset = row.asset;
       const price = toNum(row.close);
+      const history = lastTwoByAsset.get(asset) || [];
+      const latestClose = history[0] ?? price;
+      const previousClose = history[1];
+      const change = previousClose == null ? 0 : round(latestClose - previousClose);
+      const changePercent =
+        previousClose == null || previousClose === 0
+          ? 0
+          : round(((latestClose - previousClose) / previousClose) * 100);
+
       return {
         name: row.description || asset,
         ticker: row.ticker || asset,
         asset,
         market: row.exchange || "N/A",
         price: round(price),
-        change: 0,
-        changePercent: 0,
+        change,
+        changePercent,
       };
     });
 }
