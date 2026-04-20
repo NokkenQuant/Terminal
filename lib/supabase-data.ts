@@ -128,6 +128,26 @@ function computeSma(closes: number[], period: number): number {
   return round(slice.reduce((a, b) => a + b, 0) / period, 2);
 }
 
+function avg(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function signalByMean(current: number, mean: number): "compra" | "venda" | "neutro" {
+  const tolerance = Math.max(Math.abs(mean) * 0.01, 0.0001);
+  if (current > mean + tolerance) return "compra";
+  if (current < mean - tolerance) return "venda";
+  return "neutro";
+}
+
+function latestMetricValue(rows: MetricRow[], key: keyof MetricRow): number {
+  for (const row of rows) {
+    const value = row[key];
+    if (value != null && Number.isFinite(Number(value))) return Number(value);
+  }
+  return 0;
+}
+
 export async function getMarketData() {
   const { pricesTable } = env();
   const latestTable = process.env.SUPABASE_LATEST_PRICES_VIEW || "agro_latest_prices";
@@ -137,10 +157,18 @@ export async function getMarketData() {
   });
   const latestRows = await fetchPaged<LatestPriceRow>(latestTable, latestParams, 1000);
 
+  const assets = latestRows
+    .map((row) => row.asset)
+    .filter((asset): asset is string => Boolean(asset));
+  const recentStartDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString().slice(0, 10);
   const priceParams = new URLSearchParams({
     select: "asset,trade_date,close",
-    order: "asset.asc,trade_date.desc",
+    order: "trade_date.desc",
+    trade_date: `gte.${recentStartDate}`,
   });
+  if (assets.length > 0) {
+    priceParams.set("asset", `in.(${assets.join(",")})`);
+  }
   const priceRows = await fetchPaged<PriceRow>(pricesTable, priceParams, 1000);
   const lastTwoByAsset = new Map<string, number[]>();
 
@@ -201,44 +229,67 @@ export async function getHistorical(symbolOrAsset: string, startDate: string, en
   }));
 }
 
-export async function getAnalysis(symbolOrAsset: string) {
-  const { metricsTable, pricesTable } = env();
+export async function getAnalysis(symbolOrAsset: string, selectedDate?: string) {
+  const { metricsTable } = env();
   const asset = resolveAsset(symbolOrAsset);
   const metricParams = new URLSearchParams({
     select: "trade_date,asset,close,mom_3m,vol_30d_anualizada,zscore_252d,trend_ema_50_200",
     asset: `eq.${asset}`,
     order: "trade_date.desc",
-    limit: "1",
+    limit: "500",
   });
   const metricRows = await fetchPaged<MetricRow>(metricsTable, metricParams, 1000);
-  const latestMetric = metricRows[0];
+  const latestMetric = selectedDate
+    ? metricRows.find((row) => row.trade_date === selectedDate) || metricRows[0]
+    : metricRows[0];
+  const availableDates = metricRows.map((row) => row.trade_date);
 
-  const priceParams = new URLSearchParams({
-    select: "trade_date,close",
-    asset: `eq.${asset}`,
-    order: "trade_date.asc",
-  });
-  const priceRows = await fetchPaged<PriceRow>(pricesTable, priceParams, 1000);
-  const closes = priceRows.map((row) => toNum(row.close)).filter((v) => v > 0);
+  const momCurrent = selectedDate ? toNum(latestMetric?.mom_3m) : latestMetricValue(metricRows, "mom_3m");
+  const volCurrent = selectedDate ? toNum(latestMetric?.vol_30d_anualizada) : latestMetricValue(metricRows, "vol_30d_anualizada");
+  const zscoreCurrent = selectedDate ? toNum(latestMetric?.zscore_252d) : latestMetricValue(metricRows, "zscore_252d");
+  const trendCurrent = selectedDate ? toNum(latestMetric?.trend_ema_50_200) : latestMetricValue(metricRows, "trend_ema_50_200");
+
+  const momSeries = metricRows.map((row) => row.mom_3m).filter((v): v is number => v != null && Number.isFinite(Number(v))).map(Number);
+  const volSeries = metricRows.map((row) => row.vol_30d_anualizada).filter((v): v is number => v != null && Number.isFinite(Number(v))).map(Number);
+  const zscoreSeries = metricRows.map((row) => row.zscore_252d).filter((v): v is number => v != null && Number.isFinite(Number(v))).map(Number);
+  const trendSeries = metricRows.map((row) => row.trend_ema_50_200).filter((v): v is number => v != null && Number.isFinite(Number(v))).map(Number);
+
+  const means = {
+    mom_3m: avg(momSeries),
+    vol_30d_anualizada: avg(volSeries),
+    zscore_252d: avg(zscoreSeries),
+    trend_ema_50_200: avg(trendSeries),
+  };
+
+  const signals = {
+    mom_3m: signalByMean(momCurrent, means.mom_3m),
+    vol_30d_anualizada: signalByMean(volCurrent, means.vol_30d_anualizada),
+    zscore_252d: signalByMean(zscoreCurrent, means.zscore_252d),
+    trend_ema_50_200: signalByMean(trendCurrent, means.trend_ema_50_200),
+  };
+  const recommendationScore =
+    (signals.mom_3m === "compra" ? 1 : signals.mom_3m === "venda" ? -1 : 0) +
+    (signals.vol_30d_anualizada === "compra" ? 1 : signals.vol_30d_anualizada === "venda" ? -1 : 0) +
+    (signals.zscore_252d === "compra" ? 1 : signals.zscore_252d === "venda" ? -1 : 0) +
+    (signals.trend_ema_50_200 === "compra" ? 1 : signals.trend_ema_50_200 === "venda" ? -1 : 0);
+  const recommendation = recommendationScore > 0 ? "compra" : recommendationScore < 0 ? "venda" : "neutro";
 
   return {
     asset,
     trade_date: latestMetric?.trade_date || null,
-    current_price: round(closes[closes.length - 1] || toNum(latestMetric?.close), 2),
-    mom_3m: round(toNum(latestMetric?.mom_3m), 4),
-    vol_30d_anualizada: round(toNum(latestMetric?.vol_30d_anualizada), 4),
-    zscore_252d: round(toNum(latestMetric?.zscore_252d), 4),
-    trend_ema_50_200: round(toNum(latestMetric?.trend_ema_50_200), 4),
-    volatility: {
-      "21d": computeVolatility(closes, 21),
-      "63d": computeVolatility(closes, 63),
-      "252d": computeVolatility(closes, 252),
+    available_dates: availableDates,
+    current_price: round(toNum(latestMetric?.close), 2),
+    mom_3m: round(momCurrent, 4),
+    vol_30d_anualizada: round(volCurrent, 4),
+    zscore_252d: round(zscoreCurrent, 4),
+    trend_ema_50_200: round(trendCurrent, 4),
+    historical_means: {
+      mom_3m: round(means.mom_3m, 4),
+      vol_30d_anualizada: round(means.vol_30d_anualizada, 4),
+      zscore_252d: round(means.zscore_252d, 4),
+      trend_ema_50_200: round(means.trend_ema_50_200, 4),
     },
-    moving_averages: {
-      "8d": computeSma(closes, 8),
-      "16d": computeSma(closes, 16),
-      "32d": computeSma(closes, 32),
-      "100d": computeSma(closes, 100),
-    },
+    signal: recommendation,
+    signals,
   };
 }

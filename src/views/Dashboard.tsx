@@ -20,7 +20,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-[#1a1c1a] border border-[#434843]/20 p-3 rounded-lg shadow-2xl backdrop-blur-md">
         <p className="text-[10px] uppercase font-bold text-[#c3c8c1] mb-1">{new Date(label).toLocaleDateString()}</p>
         <p className="text-sm font-bold text-[#a1d494]">
-          Preço: <span className="text-[#e2e3df] tabular-nums">{payload[0].value.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' })}</span>
+          Preco: <span className="text-[#e2e3df] tabular-nums">{payload[0].value.toLocaleString('pt-BR', { style: 'currency', currency: 'USD' })}</span>
         </p>
       </div>
     );
@@ -110,15 +110,15 @@ export default function Dashboard() {
 
       {/* Grade do Dashboard */}
       <div className="grid grid-cols-12 gap-6">
-        {/* Coluna Central: Dados e Gráficos */}
+        {/* Coluna Central: Dados e Grficos */}
         <div className="col-span-12 xl:col-span-8 space-y-6">
           {/* Tabela de Commodities de Alta Densidade */}
           <section className="bg-[#1e201e] rounded-xl overflow-hidden border border-[#434843]/10">
             <div className="px-4 py-3 flex justify-between items-center bg-[#292a28]">
-              <h3 className="font-headline font-bold text-sm tracking-wide text-[#e2e3df]">MONITOR DE GRÃOS E OLEAGINOSAS</h3>
+              <h3 className="font-headline font-bold text-sm tracking-wide text-[#e2e3df]">MONITOR DE GROS E OLEAGINOSAS</h3>
               <div className="flex gap-2">
                 <span className="bg-[#043405] text-[#a1d494] text-[10px] font-bold px-2 py-0.5 rounded">AO VIVO</span>
-                <span className="text-[10px] text-[#c3c8c1] opacity-60">Atualizado há 2s</span>
+                <span className="text-[10px] text-[#c3c8c1] opacity-60">Atualizado h 2s</span>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -126,12 +126,12 @@ export default function Dashboard() {
                 <thead className="bg-[#1a1c1a] text-[10px] uppercase tracking-widest text-[#c3c8c1] font-bold">
                   <tr>
                     <th className="px-4 py-2">Instrumento</th>
-                    <th className="px-4 py-2">Último Preço</th>
-                    <th className="px-4 py-2">Variação</th>
+                    <th className="px-4 py-2">ltimo Preco</th>
+                    <th className="px-4 py-2">Variacao</th>
                     <th className="px-4 py-2">% Var</th>
                     <th className="px-4 py-2">Volume</th>
                     <th className="px-4 py-2">OI</th>
-                    <th className="px-4 py-2 text-right">Tendência (24h)</th>
+                    <th className="px-4 py-2 text-right">Tendncia (24h)</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm tabular-nums divide-y divide-[#434843]/10 text-[#e2e3df]">
@@ -174,12 +174,12 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Grade de Gráficos Macro */}
+          {/* Grade de Grficos Macro */}
           <section className="bg-[#1e201e] rounded-xl p-6 border border-[#434843]/10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-[10px] text-[#c3c8c1] font-bold uppercase tracking-widest">Histórico de Preços / {selectedAssetInfo?.name || '-'}</h4>
+                  <h4 className="text-[10px] text-[#c3c8c1] font-bold uppercase tracking-widest">Historico de Precos / {selectedAssetInfo?.name || '-'}</h4>
                   <span className="bg-[#a1d494]/10 text-[#a1d494] text-[9px] font-bold px-1.5 py-0.5 rounded">INTERATIVO</span>
                 </div>
                 <div className="flex items-baseline gap-3">
@@ -260,22 +260,22 @@ export default function Dashboard() {
               <span>{historicalData.length > 0 ? new Date(historicalData[0].date).toLocaleDateString() : ''}</span>
               <div className="flex gap-4">
                 <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#a1d494]"></div> FECHAMENTO</span>
-                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#434843]"></div> MÉDIA MÓVEL</span>
+                <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#434843]"></div> MDIA MVEL</span>
               </div>
               <span>{historicalData.length > 0 ? new Date(historicalData[historicalData.length - 1].date).toLocaleDateString() : ''}</span>
             </div>
           </section>
 
-          {/* Grade de Gráficos Macro Antiga (Removida ou Substituída) */}
+          {/* Grade de Grficos Macro Antiga (Removida ou Substituda) */}
 
-          {/* Grade Bento de Clima e Insights Logísticos */}
+          {/* Grade Bento de Clima e Insights Logisticos */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 bg-[#1e201e] rounded-xl p-4 relative overflow-hidden border border-[#434843]/10">
-              <h4 className="text-[10px] text-[#c3c8c1] font-bold uppercase tracking-widest mb-4">Índice Climático Mato Grosso</h4>
+              <h4 className="text-[10px] text-[#c3c8c1] font-bold uppercase tracking-widest mb-4">Indice Climtico Mato Grosso</h4>
               <div className="flex gap-4 items-center">
                 <div className="flex-1">
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-3xl font-headline font-bold text-[#e2e3df]">28,5°C</span>
+                    <span className="text-3xl font-headline font-bold text-[#e2e3df]">28,5C</span>
                     <span className="text-xs text-[#e9c176]">Risco de Estiagem: 42%</span>
                   </div>
                   <div className="w-full bg-[#1a1c1a] h-2 rounded-full overflow-hidden">
@@ -296,7 +296,7 @@ export default function Dashboard() {
               <h4 className="text-[10px] text-[#c3c8c1] font-bold uppercase tracking-widest">Frete: Santos-CH</h4>
               <div className="py-4">
                 <span className="text-2xl font-headline font-bold text-[#e2e3df]">$112,50</span>
-                <p className="text-[10px] text-[#a1d494] mt-1">▲ +$2,15 (Contêiner/Seco)</p>
+                <p className="text-[10px] text-[#a1d494] mt-1">? +$2,15 (Continer/Seco)</p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
@@ -307,13 +307,13 @@ export default function Dashboard() {
                     <Ship size={10} className="text-[#e2e3df]" />
                   </div>
                 </div>
-                <span className="text-[9px] text-[#c3c8c1]">Alta congestão portuária relatada</span>
+                <span className="text-[9px] text-[#c3c8c1]">Alta congesto porturia relatada</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Coluna Direita: Notícias e Feed de Atividade */}
+        {/* Coluna Direita: Noticias e Feed de Atividade */}
         <div className="col-span-12 xl:col-span-4 space-y-6">
           <section className="bg-[#1e201e] rounded-xl flex flex-col h-full border border-[#434843]/10">
             <div className="px-4 py-3 flex justify-between items-center bg-[#292a28] border-b border-[#434843]/10">
@@ -354,7 +354,7 @@ export default function Dashboard() {
                 </article>
               ))}
 
-              {/* Seção de Bloqueio Premium */}
+              {/* Seo de Bloqueio Premium */}
               <div className="relative mt-8 group">
                 <div className="blur-sm opacity-50 space-y-5 pointer-events-none">
                   <article className="group">
@@ -365,7 +365,7 @@ export default function Dashboard() {
                           <span className="text-[9px] font-bold text-[#c3c8c1] uppercase">Bloomberg</span>
                           <span className="text-[9px] text-[#c3c8c1] tabular-nums">08:45 AM</span>
                         </div>
-                        <h4 className="text-sm font-semibold leading-snug text-[#e2e3df]">Atualização logística global: Volumes de trânsito no Canal de Suez...</h4>
+                        <h4 className="text-sm font-semibold leading-snug text-[#e2e3df]">Atualizao logstica global: Volumes de trnsito no Canal de Suez...</h4>
                       </div>
                     </div>
                   </article>
@@ -373,7 +373,7 @@ export default function Dashboard() {
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1e201e]/60 backdrop-blur-[2px] rounded-xl p-6 text-center">
                   <Lock className="text-4xl text-[#e9c176] mb-3 fill-current" />
                   <h5 className="text-sm font-bold text-[#e2e3df] mb-2">Upgrade para Pro Wire</h5>
-                  <p className="text-[10px] text-[#c3c8c1] mb-4">Obtenha notícias de nível institucional, sinais de especialistas e arquivos históricos ilimitados.</p>
+                  <p className="text-[10px] text-[#c3c8c1] mb-4">Obtenha notcias de nvel institucional, sinais de especialistas e arquivos histricos ilimitados.</p>
                   <button className="bg-[#e9c176] text-[#412d00] text-[11px] font-bold px-4 py-2 rounded-lg hover:scale-105 transition-transform active:opacity-80">
                     SEJA PREMIUM
                   </button>
@@ -382,9 +382,9 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Catalisadores Próximos */}
+          {/* Catalisadores Prximos */}
           <div className="bg-[#1e201e] p-4 rounded-xl border border-[#434843]/10">
-            <h4 className="text-[10px] text-[#c3c8c1] font-bold uppercase tracking-widest mb-4">Próximos Catalisadores</h4>
+            <h4 className="text-[10px] text-[#c3c8c1] font-bold uppercase tracking-widest mb-4">Prximos Catalisadores</h4>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -392,7 +392,7 @@ export default function Dashboard() {
                     MAI<br/>24
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-[#e2e3df]">Relatório USDA WASDE</p>
+                    <p className="text-[11px] font-bold text-[#e2e3df]">Relatrio USDA WASDE</p>
                     <p className="text-[9px] text-[#c3c8c1]">Estimativas Globais de S&D</p>
                   </div>
                 </div>
@@ -405,7 +405,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-[11px] font-bold text-[#e2e3df]">Levantamento de Safra CONAB</p>
-                    <p className="text-[9px] text-[#c3c8c1]">Foco na Produção Brasileira</p>
+                    <p className="text-[9px] text-[#c3c8c1]">Foco na Produo Brasileira</p>
                   </div>
                 </div>
                 <Bell size={14} className="text-[#c3c8c1]" />
@@ -415,11 +415,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Botão de Ação Flutuante */}
+      {/* Boto de Ao Flutuante */}
       <button className="fixed bottom-8 right-8 bg-[#a1d494] text-[#0a3909] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 group">
         <Bolt size={24} />
         <div className="absolute right-16 bg-[#333533] text-[#e2e3df] text-[10px] font-bold py-2 px-3 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all shadow-xl pointer-events-none">
-          Nova Mesa de Análise
+          Nova Mesa de Anlise
         </div>
       </button>
     </motion.div>

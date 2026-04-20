@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Search, Bell, TrendingUp, User, Sprout, Database, ArrowUp, ArrowDown, Lock, ShoppingCart, Info, Star, ArrowUpRight, ArrowDownRight, Maximize2, ZoomIn, ZoomOut, MoveHorizontal, Activity, Shield, Zap, RefreshCw } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
@@ -9,9 +9,31 @@ interface AnalysisMetrics {
   zscore_252d: number;
   trend_ema_50_200: number;
   current_price: number;
+  available_dates?: string[];
+  signal?: 'compra' | 'venda' | 'neutro';
+  signals?: Record<string, 'compra' | 'venda' | 'neutro'>;
 }
 
-// Dados simulados para o grÃ¡fico
+interface MarketAssetInfo {
+  name: string;
+  ticker: string;
+  asset: string;
+  market: string;
+  price: number;
+  change: number;
+  changePercent: number;
+}
+
+interface HistoricalPoint {
+  date: string;
+  open?: number | null;
+  high?: number | null;
+  low?: number | null;
+  close?: number | null;
+  volume?: number | null;
+}
+
+// Dados simulados para o grafico
 const CHART_DATA = [
   { time: '08:00', price: 1170.50, volume: 1200 },
   { time: '08:30', price: 1171.50, volume: 1300 },
@@ -42,7 +64,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[#a1d494]"></div>
           <p className="text-sm font-bold text-[#e2e3df]">
-            PreÃ§o: <span className="tabular-nums">{payload[0].value.toFixed(2)}</span>
+            Preco: <span className="tabular-nums">{payload[0].value.toFixed(2)}</span>
           </p>
         </div>
         <div className="flex items-center gap-2 mt-1">
@@ -64,15 +86,42 @@ export default function Analysis() {
   const [panOffset, setPanOffset] = useState(0);
   const [metrics, setMetrics] = useState<AnalysisMetrics | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState('SOJA_EUA');
+  const [selectedMetricDate, setSelectedMetricDate] = useState('');
+  const [assetOptions, setAssetOptions] = useState<string[]>([]);
+  const [marketAssets, setMarketAssets] = useState<MarketAssetInfo[]>([]);
+  const [assetHistory, setAssetHistory] = useState<HistoricalPoint[]>([]);
+
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        const response = await fetch('/api/market-data');
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setMarketAssets(data);
+          const assets = Array.from(new Set(data.map((item: any) => item.asset).filter(Boolean))).sort();
+          setAssetOptions(assets);
+          if (assets.length > 0 && !assets.includes(selectedAsset)) setSelectedAsset(assets[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching assets:", error);
+      }
+    };
+    fetchAssets();
+  }, []);
 
   useEffect(() => {
     const fetchMetrics = async () => {
       setLoadingMetrics(true);
       try {
-        const response = await fetch('/api/analysis/ZS=F');
+        const query = selectedMetricDate ? `?date=${selectedMetricDate}` : '';
+        const response = await fetch(`/api/analysis/${encodeURIComponent(selectedAsset)}${query}`);
         const data = await response.json();
         if (data && !data.error) {
           setMetrics(data);
+          if (!selectedMetricDate && data.available_dates?.[0]) {
+            setSelectedMetricDate(data.available_dates[0]);
+          }
         } else {
           console.error("API returned error or invalid data:", data);
           setMetrics(null);
@@ -84,8 +133,30 @@ export default function Analysis() {
         setLoadingMetrics(false);
       }
     };
+    if (!selectedAsset) return;
     fetchMetrics();
-  }, []);
+  }, [selectedAsset, selectedMetricDate]);
+  useEffect(() => {
+    const fetchAssetHistory = async () => {
+      if (!selectedAsset) return;
+      try {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - 120);
+        const response = await fetch(`/api/historical/${encodeURIComponent(selectedAsset)}?startDate=${start.toISOString().slice(0, 10)}&endDate=${end.toISOString().slice(0, 10)}`);
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setAssetHistory(data);
+        } else {
+          setAssetHistory([]);
+        }
+      } catch (error) {
+        console.error("Error fetching analysis history:", error);
+        setAssetHistory([]);
+      }
+    };
+    fetchAssetHistory();
+  }, [selectedAsset]);
   const [scrollOffset, setScrollOffset] = useState(0);
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.5, 4));
@@ -110,6 +181,19 @@ export default function Analysis() {
   const visibleCount = Math.floor(CHART_DATA.length / zoom);
   const startIndex = Math.min(CHART_DATA.length - visibleCount, scrollOffset);
   const visibleData = CHART_DATA.slice(startIndex, startIndex + visibleCount);
+  const selectedMarketAsset = marketAssets.find((item) => item.asset === selectedAsset) || marketAssets[0];
+  const latestHistoryPoint = assetHistory.length > 0 ? assetHistory[assetHistory.length - 1] : null;
+  const iconByAsset: Record<string, any> = {
+    SOJA_EUA: Sprout,
+    MILHO_EUA: Database,
+    TRIGO_SRW: Shield,
+    CAFE_EUA: Zap,
+    ALGODAO: Activity,
+  };
+  const CommodityIcon = iconByAsset[selectedAsset] || Sprout;
+  const max24h = latestHistoryPoint?.high ?? null;
+  const min24h = latestHistoryPoint?.low ?? null;
+  const volume24h = latestHistoryPoint?.volume ?? null;
 
   return (
     <motion.div 
@@ -117,33 +201,55 @@ export default function Analysis() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
-      {/* SeÃ§Ã£o de CabeÃ§alho: TÃ­tulo do Ativo e EstatÃ­sticas Chave */}
+      {/* Secao de Cabecalho: Titulo do Ativo e Estatisticas Chave */}
       <section className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-[#1e201e] rounded-xl flex items-center justify-center border-b-2 border-[#e9c176]">
-            <Sprout size={40} className="text-[#e9c176] fill-current" />
+            <CommodityIcon size={40} className="text-[#e9c176] fill-current" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-extrabold font-headline tracking-tighter text-[#e2e3df]">SOJA (ZS)</h1>
-              <span className="bg-[#292a28] px-2 py-0.5 rounded text-[10px] font-bold text-[#e9c176] tracking-widest">SOJA.CBOT</span>
+              <h1 className="text-3xl font-extrabold font-headline tracking-tighter text-[#e2e3df]">
+                {(selectedMarketAsset?.name || selectedAsset).toUpperCase()}
+              </h1>
+              <span className="bg-[#292a28] px-2 py-0.5 rounded text-[10px] font-bold text-[#e9c176] tracking-widest">
+                {selectedMarketAsset?.ticker || '-'}
+              </span>
+            </div>
+            <div className="mb-2">
+              <select
+                value={selectedAsset}
+                onChange={(e) => {
+                  setSelectedAsset(e.target.value);
+                  setSelectedMetricDate('');
+                }}
+                className="bg-[#0d0f0d] border border-[#434843]/20 rounded-lg py-1.5 px-3 text-xs text-[#e2e3df]"
+              >
+                {assetOptions.map((asset) => (
+                  <option key={asset} value={asset}>{asset}</option>
+                ))}
+              </select>
             </div>
             <div className="flex items-center gap-4 text-sm">
-              <span className="text-[#a1d494] font-black tabular-nums text-xl">1.184,25</span>
-              <span className="text-[#a1d494] flex items-center gap-1 font-semibold">
-                <ArrowUpRight size={14} />
-                +12,75 (1,09%)
+              <span className={`${(selectedMarketAsset?.change || 0) >= 0 ? 'text-[#a1d494]' : 'text-[#ffb4ab]'} font-black tabular-nums text-xl`}>
+                {(selectedMarketAsset?.price ?? 0).toLocaleString('pt-BR')}
               </span>
-              <span className="text-[#c3c8c1] opacity-50 font-medium tracking-tight uppercase text-xs">Mercado Aberto â€¢ Mar 2024</span>
+              <span className={`${(selectedMarketAsset?.change || 0) >= 0 ? 'text-[#a1d494]' : 'text-[#ffb4ab]'} flex items-center gap-1 font-semibold`}>
+                {(selectedMarketAsset?.change || 0) >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                {(selectedMarketAsset?.change || 0) >= 0 ? '+' : ''}{(selectedMarketAsset?.change ?? 0).toFixed(2)} ({(selectedMarketAsset?.changePercent || 0) >= 0 ? '+' : ''}{(selectedMarketAsset?.changePercent ?? 0).toFixed(2)}%)
+              </span>
+              <span className="text-[#c3c8c1] opacity-50 font-medium tracking-tight uppercase text-xs">
+                Mercado {selectedMarketAsset?.market || 'N/A'}
+              </span>
             </div>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto">
           {[
-            { label: 'MÃ¡xima 24h', val: '1.192,50', color: 'text-[#e9c176]' },
-            { label: 'MÃ­nima 24h', val: '1.168,00', color: 'text-[#e2e3df]' },
-            { label: 'Volume', val: '142,8K', color: 'text-[#e2e3df]' },
-            { label: 'Var. OI', val: '+2,4%', color: 'text-[#a1d494]', border: 'border-b-2 border-[#a1d494]' }
+            { label: 'Maxima 24h', val: max24h != null ? max24h.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-', color: 'text-[#e9c176]' },
+            { label: 'Minima 24h', val: min24h != null ? min24h.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-', color: 'text-[#e2e3df]' },
+            { label: 'Volume', val: volume24h != null ? volume24h.toLocaleString('pt-BR') : '-', color: 'text-[#e2e3df]' },
+            { label: 'Variação', val: `${(selectedMarketAsset?.change || 0) >= 0 ? '+' : ''}${(selectedMarketAsset?.change ?? 0).toFixed(2)} (${(selectedMarketAsset?.changePercent || 0) >= 0 ? '+' : ''}${(selectedMarketAsset?.changePercent ?? 0).toFixed(2)}%)`, color: (selectedMarketAsset?.change || 0) >= 0 ? 'text-[#a1d494]' : 'text-[#ffb4ab]', border: `border-b-2 ${(selectedMarketAsset?.change || 0) >= 0 ? 'border-[#a1d494]' : 'border-[#ffb4ab]'}` }
           ].map((stat) => (
             <div key={stat.label} className={`bg-[#1e201e] p-3 rounded-lg ${stat.border || ''}`}>
               <p className="text-[10px] uppercase text-[#c3c8c1] mb-1 font-bold">{stat.label}</p>
@@ -155,7 +261,7 @@ export default function Analysis() {
 
       {/* Layout Principal do Workspace */}
       <div className="grid grid-cols-12 gap-6">
-        {/* Esquerda: GrÃ¡fico TÃ©cnico e Tabela */}
+        {/* Esquerda: Grafico Tecnico e Tabela */}
         <div className="col-span-12 xl:col-span-8 flex flex-col gap-6">
           <div className="bg-[#1a1c1a] rounded-xl overflow-hidden flex flex-col h-[500px] border border-[#434843]/10">
             <div className="flex justify-between items-center px-6 py-4 bg-[#1e201e] border-b border-[#434843]/10">
@@ -164,7 +270,7 @@ export default function Analysis() {
                   onClick={() => setViewMode('technical')}
                   className={`text-xs font-bold transition-all ${viewMode === 'technical' ? 'text-[#a1d494] border-b border-[#a1d494] pb-1' : 'text-[#c3c8c1] opacity-50 hover:opacity-100'}`}
                 >
-                  Vista TÃ©cnica
+                  Vista Tecnica
                 </button>
                 <button 
                   onClick={() => setViewMode('seasonality')}
@@ -251,7 +357,7 @@ export default function Analysis() {
                     fill="url(#colorPrice)" 
                     animationDuration={300}
                   />
-                  <ReferenceLine y={1180} stroke="#e9c176" strokeDasharray="3 3" label={{ value: 'ResistÃªncia', position: 'right', fill: '#e9c176', fontSize: 10 }} />
+                  <ReferenceLine y={1180} stroke="#e9c176" strokeDasharray="3 3" label={{ value: 'Resistencia', position: 'right', fill: '#e9c176', fontSize: 10 }} />
                 </AreaChart>
               </ResponsiveContainer>
               
@@ -264,7 +370,7 @@ export default function Analysis() {
               {zoom > 1 && (
                 <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-[#1e201e]/80 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-[#a1d494] flex items-center gap-2 border border-[#a1d494]/20">
                   <MoveHorizontal size={12} />
-                  MODO PANORÃ‚MICO ATIVO
+                  MODO PANORAMICO ATIVO
                 </div>
               )}
             </div>
@@ -273,25 +379,25 @@ export default function Analysis() {
           <div className="bg-[#1e201e] p-6 rounded-xl border border-[#434843]/10">
             <h3 className="text-lg font-bold font-headline mb-6 flex items-center gap-2 text-[#e2e3df]">
               <Database size={20} className="text-[#a1d494]" />
-              ProjeÃ§Ãµes Fundamentais (WASDE)
+              Projecoes Fundamentais (WASDE)
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-widest text-[#c3c8c1] font-bold border-b border-[#434843]/10">
-                    <th className="pb-4 px-2">MÃ©trica</th>
+                    <th className="pb-4 px-2">Metrica</th>
                     <th className="pb-4 px-2">Final 2022/23</th>
                     <th className="pb-4 px-2">Proj. 2023/24</th>
-                    <th className="pb-4 px-2 text-[#a1d494]">PrevisÃ£o 24/25</th>
+                    <th className="pb-4 px-2 text-[#a1d494]">Previsao 24/25</th>
                     <th className="pb-4 px-2">Var. YoY</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm font-medium tabular-nums text-[#e2e3df]">
                   {[
-                    { m: 'ProduÃ§Ã£o Total (MT)', f: '374,4M', p: '398,9M', fc: '410,2M', y: '+2,8%' },
+                    { m: 'Producao Total (MT)', f: '374,4M', p: '398,9M', fc: '410,2M', y: '+2,8%' },
                     { m: 'Estoques Finais', f: '101,9M', p: '114,6M', fc: '116,0M', y: '+1,2%' },
-                    { m: 'RelaÃ§Ã£o Estoque/Uso', f: '27,2%', p: '28,7%', fc: '29,1%', y: '+0,4%' },
-                    { m: 'PrevisÃ£o de ExportaÃ§Ã£o (MT)', f: '171,1M', p: '172,9M', fc: '178,5M', y: '+3,2%' }
+                    { m: 'Relacao Estoque/Uso', f: '27,2%', p: '28,7%', fc: '29,1%', y: '+0,4%' },
+                    { m: 'Previsao de Exportacao (MT)', f: '171,1M', p: '172,9M', fc: '178,5M', y: '+3,2%' }
                   ].map((row) => (
                     <tr key={row.m} className="hover:bg-[#333533] transition-colors border-b border-[#434843]/5">
                       <td className="py-4 px-2 font-headline font-semibold">{row.m}</td>
@@ -308,12 +414,43 @@ export default function Analysis() {
             </div>
           </div>
 
-          {/* MÃ©tricas diretas da tabela agro_metrics_analysis */}
+          {/* Metricas diretas da tabela agro_metrics_analysis */}
           <div className="bg-[#1e201e] p-6 rounded-xl border border-[#434843]/10">
-            <h3 className="text-lg font-bold font-headline mb-6 flex items-center gap-2 text-[#e2e3df]">
-              <Activity size={20} className="text-[#e9c176]" />
-              MÃ©tricas Quantitativas (Supabase)
-            </h3>
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+              <h3 className="text-lg font-bold font-headline flex items-center gap-2 text-[#e2e3df]">
+                <Activity size={20} className="text-[#e9c176]" />
+                Metricas Quantitativas (Supabase)
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase text-[#c3c8c1] mb-1 font-bold">Ativo</label>
+                  <select
+                    value={selectedAsset}
+                    onChange={(e) => {
+                      setSelectedAsset(e.target.value);
+                      setSelectedMetricDate('');
+                    }}
+                    className="bg-[#0d0f0d] border border-[#434843]/20 rounded-lg py-2 px-3 text-xs text-[#e2e3df]"
+                  >
+                    {assetOptions.map((asset) => (
+                      <option key={asset} value={asset}>{asset}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-[#c3c8c1] mb-1 font-bold">Data</label>
+                  <select
+                    value={selectedMetricDate}
+                    onChange={(e) => setSelectedMetricDate(e.target.value)}
+                    className="bg-[#0d0f0d] border border-[#434843]/20 rounded-lg py-2 px-3 text-xs text-[#e2e3df]"
+                  >
+                    {(metrics?.available_dates || []).map((date) => (
+                      <option key={date} value={date}>{new Date(date).toLocaleDateString('pt-BR')}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
             {loadingMetrics ? (
               <div className="flex items-center justify-center py-8 text-[#c3c8c1]">
                 <RefreshCw className="animate-spin mr-2" size={18} /> Carregando...
@@ -323,22 +460,26 @@ export default function Analysis() {
                 <div className="bg-[#0d0f0d] p-4 rounded-lg border border-[#434843]/10">
                   <p className="text-[10px] text-[#c3c8c1] uppercase font-bold mb-1">mom_3m</p>
                   <p className="text-xl font-bold text-[#e2e3df]">{metrics.mom_3m?.toFixed(4) ?? '-'}</p>
+                  <p className="text-[11px] uppercase mt-2 font-bold text-[#a1d494]">{metrics.signals?.mom_3m || 'neutro'}</p>
                 </div>
                 <div className="bg-[#0d0f0d] p-4 rounded-lg border border-[#434843]/10">
                   <p className="text-[10px] text-[#c3c8c1] uppercase font-bold mb-1">vol_30d_anualizada</p>
                   <p className="text-xl font-bold text-[#e2e3df]">{metrics.vol_30d_anualizada?.toFixed(4) ?? '-'}</p>
+                  <p className="text-[11px] uppercase mt-2 font-bold text-[#a1d494]">{metrics.signals?.vol_30d_anualizada || 'neutro'}</p>
                 </div>
                 <div className="bg-[#0d0f0d] p-4 rounded-lg border border-[#434843]/10">
                   <p className="text-[10px] text-[#c3c8c1] uppercase font-bold mb-1">zscore_252d</p>
                   <p className="text-xl font-bold text-[#e2e3df]">{metrics.zscore_252d?.toFixed(4) ?? '-'}</p>
+                  <p className="text-[11px] uppercase mt-2 font-bold text-[#a1d494]">{metrics.signals?.zscore_252d || 'neutro'}</p>
                 </div>
                 <div className="bg-[#0d0f0d] p-4 rounded-lg border border-[#434843]/10">
                   <p className="text-[10px] text-[#c3c8c1] uppercase font-bold mb-1">trend_ema_50_200</p>
                   <p className="text-xl font-bold text-[#e2e3df]">{metrics.trend_ema_50_200?.toFixed(4) ?? '-'}</p>
+                  <p className="text-[11px] uppercase mt-2 font-bold text-[#a1d494]">{metrics.signals?.trend_ema_50_200 || 'neutro'}</p>
                 </div>
               </div>
             ) : (
-              <p className="text-center py-8 text-[#c3c8c1]">Erro ao carregar mÃ©tricas.</p>
+              <p className="text-center py-8 text-[#c3c8c1]">Erro ao carregar metricas.</p>
             )}
           </div>
 
@@ -372,7 +513,7 @@ export default function Analysis() {
                 <div className="h-full bg-[#a1d494]" style={{ width: '70%' }}></div>
               </div>
               <p className="text-[10px] text-[#c3c8c1] leading-relaxed opacity-70 italic mt-2">
-                "A reduÃ§Ã£o de produtividade no Mato Grosso, somada Ã  forte demanda das processadoras chinesas, estÃ¡ fornecendo suporte significativo para os prÃªmios do 3Âº trimestre."
+                "A reducao de produtividade no Mato Grosso, somada a forte demanda das processadoras chinesas, esta fornecendo suporte significativo para os premios do 3o trimestre."
               </p>
             </div>
           </div>
@@ -381,9 +522,9 @@ export default function Analysis() {
             <h3 className="text-sm font-bold font-headline mb-6 uppercase tracking-widest text-[#c3c8c1]">Monitor de Basis Regional</h3>
             <div className="space-y-6">
               {[
-                { loc: 'Porto de ParanaguÃ¡ (BRA)', val: '+$0,45', color: 'bg-[#e9c176]', text: 'text-[#e9c176]' },
+                { loc: 'Porto de Paranagua (BRA)', val: '+$0,45', color: 'bg-[#e9c176]', text: 'text-[#e9c176]' },
                 { loc: 'New Orleans (GULF)', val: '+$0,72', color: 'bg-[#a1d494]', text: 'text-[#a1d494]', offset: true },
-                { loc: 'RosÃ¡rio (ARG)', val: '+$0,22', color: 'bg-[#c3c8c1]', text: 'text-[#e2e3df]' }
+                { loc: 'Rosario (ARG)', val: '+$0,22', color: 'bg-[#c3c8c1]', text: 'text-[#e2e3df]' }
               ].map((b) => (
                 <div key={b.loc} className={`flex items-start gap-4 ${b.offset ? 'translate-x-4' : ''}`}>
                   <div className={`w-2 h-12 rounded-full ${b.color}`}></div>
@@ -406,8 +547,8 @@ export default function Analysis() {
             />
             <div className="absolute inset-0 bg-[#1e201e]/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
               <Lock className="text-[#e9c176] text-4xl mb-2" size={32} />
-              <h4 className="text-sm font-bold text-[#e2e3df] mb-2">RelatÃ³rios de InteligÃªncia Profunda</h4>
-              <p className="text-[10px] text-[#c3c8c1] mb-4 max-w-[200px]">Desbloqueie a modelagem preditiva de impacto climÃ¡tico para a safra 2024.</p>
+              <h4 className="text-sm font-bold text-[#e2e3df] mb-2">Relatorios de Inteligencia Profunda</h4>
+              <p className="text-[10px] text-[#c3c8c1] mb-4 max-w-[200px]">Desbloqueie a modelagem preditiva de impacto climatico para a safra 2024.</p>
               <button className="bg-gradient-to-r from-[#a1d494] to-[#043405] text-[#e2e3df] px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-transform">
                 Upgrade para Harvest+
               </button>
@@ -416,7 +557,7 @@ export default function Analysis() {
         </div>
       </div>
 
-      {/* BotÃ£o de AÃ§Ã£o Flutuante */}
+      {/* Botao de Acao Flutuante */}
       <button className="fixed bottom-8 right-8 w-14 h-14 bg-[#a1d494] text-[#0a3909] rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-[60] border-4 border-[#1e201e]">
         <ShoppingCart size={24} />
       </button>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Search, Filter, Download, Bell, Star, Ship, Info, RefreshCw, History, X } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
@@ -26,7 +26,7 @@ export default function MarketData() {
   const [data, setData] = useState<CommodityData[]>([]);
   const [searchAsset, setSearchAsset] = useState('');
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState('DiÃ¡rio');
+  const [period, setPeriod] = useState('Diario');
 
   const [selectedAsset, setSelectedAsset] = useState<CommodityData | null>(null);
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]);
@@ -34,12 +34,16 @@ export default function MarketData() {
   const [historicalData, setHistoricalData] = useState<HistoricalPoint[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [chartStartDate, setChartStartDate] = useState('');
+  const historyCache = useRef<Record<string, HistoricalPoint[]>>({});
+  const chartStartInputRef = useRef<HTMLInputElement | null>(null);
   const assetOptions = Array.from(new Set(data.map((d) => d.asset))).sort();
   const filteredData = searchAsset
     ? data.filter((d) => d.asset.toLowerCase().includes(searchAsset.toLowerCase()))
     : data;
   const chartData = [...historicalData]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .filter((point) => !chartStartDate || point.date >= chartStartDate)
     .map((point) => ({
       date: new Date(point.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
       close: point.close ?? null,
@@ -72,7 +76,7 @@ export default function MarketData() {
   }, [period]);
 
   const downloadCSV = () => {
-    const headers = ["Nome", "Ticker", "Mercado", "PreÃ§o", "VariaÃ§Ã£o", "% VariaÃ§Ã£o"];
+    const headers = ["Nome", "Ticker", "Mercado", "Preco", "Variacao", "% Variacao"];
     const rows = data.map(c => [c.name, c.ticker, c.market, c.price, c.change, c.changePercent]);
     
     const csvContent = [
@@ -91,13 +95,27 @@ export default function MarketData() {
     document.body.removeChild(link);
   };
 
-  const fetchHistoricalData = async (symbol: string) => {
+  const fetchHistoricalData = async (symbol: string, customStartDate?: string, customEndDate?: string) => {
     setLoadingHistory(true);
+    const effectiveStartDate = customStartDate || startDate;
+    const effectiveEndDate = customEndDate || endDate;
+    const cacheKey = `${symbol}:${effectiveStartDate}:${effectiveEndDate}`;
+    if (historyCache.current[cacheKey]) {
+      setHistoricalData(historyCache.current[cacheKey]);
+      setLoadingHistory(false);
+      return;
+    }
     try {
-      const response = await fetch(`/api/historical/${symbol}?startDate=${startDate}&endDate=${endDate}`);
+      const response = await fetch(`/api/historical/${symbol}?startDate=${effectiveStartDate}&endDate=${effectiveEndDate}`);
       const jsonData = await response.json();
       if (Array.isArray(jsonData)) {
-        setHistoricalData(jsonData.reverse()); // Most recent first
+        historyCache.current[cacheKey] = jsonData;
+        setHistoricalData(jsonData);
+        if (jsonData.length > 0) {
+          const latestDate = jsonData[jsonData.length - 1].date;
+          const defaultStart = jsonData[Math.max(0, jsonData.length - 90)]?.date || jsonData[0].date;
+          setChartStartDate((current) => (current && current <= latestDate ? current : defaultStart));
+        }
       } else {
         setHistoricalData([]);
       }
@@ -112,7 +130,7 @@ export default function MarketData() {
   const downloadHistoricalCSV = () => {
     if (!selectedAsset || historicalData.length === 0) return;
     
-    const headers = ["Data", "Abertura", "MÃ¡xima", "MÃ­nima", "Fechamento", "Volume"];
+    const headers = ["Data", "Abertura", "Maxima", "Minima", "Fechamento", "Volume"];
     const rows = historicalData.map(h => [
       new Date(h.date).toLocaleDateString(),
       h.open?.toFixed(2),
@@ -144,7 +162,7 @@ export default function MarketData() {
       animate={{ opacity: 1, x: 0 }}
       className="space-y-6"
     >
-      {/* CabeÃ§alho da PÃ¡gina / Barra de Filtros */}
+      {/* Cabecalho da Pagina / Barra de Filtros */}
       <section className="mb-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-6">
           <div>
@@ -152,7 +170,7 @@ export default function MarketData() {
             <p className="text-[#c3c8c1] text-sm">Acompanhamento de commodities com dados consolidados do Supabase.</p>
           </div>
           <div className="flex gap-2 p-1 bg-[#1a1c1a] rounded-xl">
-            {['DiÃ¡rio', 'Semanal', 'Mensal'].map((p) => (
+            {['Diario', 'Semanal', 'Mensal'].map((p) => (
               <button 
                 key={p}
                 onClick={() => setPeriod(p)}
@@ -183,9 +201,9 @@ export default function MarketData() {
           </div>
           <div className="relative">
             <select className="w-full bg-[#0d0f0d] border-none rounded-lg py-2.5 px-4 text-sm text-[#e2e3df] focus:ring-1 focus:ring-[#e9c349] appearance-none">
-              <option>Todas as RegiÃµes</option>
-              <option>AmÃ©rica do Norte</option>
-              <option>AmÃ©rica do Sul (BRA/ARG)</option>
+              <option>Todas as Regioes</option>
+              <option>America do Norte</option>
+              <option>America do Sul (BRA/ARG)</option>
               <option>Mar Negro / UE</option>
             </select>
           </div>
@@ -214,10 +232,10 @@ export default function MarketData() {
               <tr className="bg-[#1a1c1a]">
                 <th className="px-6 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1]">Ativo / Ticker</th>
                 <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1]">Mercado</th>
-                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">PreÃ§o Atual</th>
-                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">VariaÃ§Ã£o</th>
-                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">% VariaÃ§Ã£o</th>
-                <th className="px-6 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">AÃ§Ãµes</th>
+                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Preco Atual</th>
+                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Variacao</th>
+                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">% Variacao</th>
+                <th className="px-6 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Acoes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1a1c1a]/30 font-body text-sm text-[#e2e3df]">
@@ -234,7 +252,10 @@ export default function MarketData() {
                   className="hover:bg-[#333533] transition-colors group cursor-pointer"
                   onClick={() => {
                     setSelectedAsset(c);
-                    fetchHistoricalData(c.asset);
+                    const latest = new Date().toISOString().slice(0, 10);
+                    const older = new Date();
+                    older.setFullYear(older.getFullYear() - 2);
+                    fetchHistoricalData(c.asset, older.toISOString().slice(0, 10), latest);
                   }}
                 >
                   <td className="px-6 py-4">
@@ -242,7 +263,7 @@ export default function MarketData() {
                       <div className={`w-2 h-8 rounded-full ${c.change > 0 ? 'bg-[#a1d494]' : 'bg-[#ffb4ab]'}`}></div>
                       <div>
                         <div className="font-bold">{c.name}</div>
-                        <div className="text-[10px] text-[#c3c8c1] uppercase">{c.asset} • {c.ticker}</div>
+                        <div className="text-[10px] text-[#c3c8c1] uppercase">{c.asset} ? {c.ticker}</div>
                       </div>
                     </div>
                   </td>
@@ -266,7 +287,7 @@ export default function MarketData() {
                           fetchHistoricalData(c.asset);
                         }}
                         className="p-1.5 hover:bg-[#1e201e] rounded-md text-[#a1d494]"
-                        title="Ver HistÃ³rico"
+                        title="Ver Historico"
                       >
                         <History size={14} />
                       </button>
@@ -289,12 +310,31 @@ export default function MarketData() {
                 Grafico de Cotas: {selectedAsset.name} ({selectedAsset.asset})
               </h2>
               <p className="text-xs text-[#c3c8c1]">Clique em outro ativo na tabela para trocar o grafico.</p>
+              <input
+                ref={chartStartInputRef}
+                type="date"
+                value={chartStartDate}
+                onChange={(e) => setChartStartDate(e.target.value)}
+                className="hidden"
+              />
             </div>
             <div className="text-right">
               <div className="text-[10px] uppercase tracking-widest text-[#c3c8c1]">Variacao Diaria</div>
               <div className={`text-base font-bold tabular-nums ${selectedAsset.change >= 0 ? 'text-[#a1d494]' : 'text-[#ffb4ab]'}`}>
                 {selectedAsset.change >= 0 ? '+' : ''}{selectedAsset.change.toFixed(2)} ({selectedAsset.changePercent >= 0 ? '+' : ''}{selectedAsset.changePercent.toFixed(2)}%)
               </div>
+              <button
+                onClick={() => {
+                  if (chartStartInputRef.current && "showPicker" in chartStartInputRef.current) {
+                    (chartStartInputRef.current as any).showPicker();
+                  } else {
+                    chartStartInputRef.current?.click();
+                  }
+                }}
+                className="mt-2 px-3 py-1 text-xs rounded bg-[#0d0f0d] border border-[#434843]/30 text-[#e2e3df] hover:border-[#a1d494]/60"
+              >
+                Data inicial: {chartStartDate ? new Date(chartStartDate).toLocaleDateString('pt-BR') : 'Selecionar'}
+              </button>
             </div>
           </div>
 
@@ -342,14 +382,14 @@ export default function MarketData() {
         <div className="md:col-span-2 bg-[#1a1c1a] rounded-2xl p-6 relative overflow-hidden border border-[#434843]/10">
           <div className="absolute inset-0 bg-[#a1d494]/5 pointer-events-none"></div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="font-headline font-bold text-lg text-[#e2e3df]">Rastreador de PrÃªmios LogÃ­sticos</h2>
+            <h2 className="font-headline font-bold text-lg text-[#e2e3df]">Rastreador de Premios Logisticos</h2>
             <span className="text-xs font-bold text-[#a1d494] flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-[#a1d494] animate-pulse"></span> CORRELAÃ‡ÃƒO AO VIVO
+              <span className="w-2 h-2 rounded-full bg-[#a1d494] animate-pulse"></span> CORRELACAO AO VIVO
             </span>
           </div>
           <div className="grid grid-cols-2 gap-8">
             <div>
-              <p className="text-[10px] uppercase font-bold text-[#c3c8c1] mb-4">Ãndice de Frete (GranÃ©is SÃ³lidos)</p>
+              <p className="text-[10px] uppercase font-bold text-[#c3c8c1] mb-4">Indice de Frete (Graneis Solidos)</p>
               <div className="flex items-end gap-2 mb-2">
                 <span className="text-3xl font-headline font-extrabold tabular-nums text-[#e2e3df]">2.410</span>
                 <span className="text-[#ffb4ab] text-sm font-bold pb-1 flex items-center">-1,2%</span>
@@ -359,7 +399,7 @@ export default function MarketData() {
               </div>
             </div>
             <div>
-              <p className="text-[10px] uppercase font-bold text-[#c3c8c1] mb-4">MÃ©dia de Sobretaxa de CombustÃ­vel</p>
+              <p className="text-[10px] uppercase font-bold text-[#c3c8c1] mb-4">Media de Sobretaxa de Combustivel</p>
               <div className="flex items-end gap-2 mb-2">
                 <span className="text-3xl font-headline font-extrabold tabular-nums text-[#e2e3df]">1,18</span>
                 <span className="text-[#a1d494] text-sm font-bold pb-1 flex items-center">+0,5%</span>
@@ -370,20 +410,20 @@ export default function MarketData() {
             </div>
           </div>
           <div className="mt-8 h-32 bg-[#0d0f0d] rounded-xl flex items-center justify-center border border-[#434843]/10">
-            <p className="text-[#c3c8c1] italic text-xs">Carregando VisualizaÃ§Ã£o de Spread LogÃ­stico DinÃ¢mico...</p>
+            <p className="text-[#c3c8c1] italic text-xs">Carregando Visualizacao de Spread Logistico Dinamico...</p>
           </div>
         </div>
 
         <div className="bg-[#0d0f0d] rounded-2xl p-6 border border-[#434843]/10">
-          <h2 className="font-headline font-bold text-lg text-[#e2e3df] mb-6">Alertas CrÃ­ticos</h2>
+          <h2 className="font-headline font-bold text-lg text-[#e2e3df] mb-6">Alertas Criticos</h2>
           <div className="space-y-4">
             <div className="flex gap-4 group cursor-pointer">
               <div className="w-10 h-10 rounded-lg bg-[#93000a]/30 flex items-center justify-center shrink-0">
                 <Info size={18} className="text-[#ffb4ab]" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-[#e2e3df] leading-tight">Gargalo LogÃ­stico no Mato Grosso</h4>
-                <p className="text-xs text-[#c3c8c1] mt-1">PrÃªmios de transporte rodoviÃ¡rio subiram 14% na regiÃ£o de MT.</p>
+                <h4 className="text-sm font-bold text-[#e2e3df] leading-tight">Gargalo Logistico no Mato Grosso</h4>
+                <p className="text-xs text-[#c3c8c1] mt-1">Premios de transporte rodoviario subiram 14% na regiao de MT.</p>
               </div>
             </div>
             <div className="flex gap-4 group cursor-pointer">
@@ -392,17 +432,17 @@ export default function MarketData() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-[#e2e3df] leading-tight">Fraqueza na Base do Milho Argentino</h4>
-                <p className="text-xs text-[#c3c8c1] mt-1">Estreitamento da base devido Ã  melhoria nas perspectivas climÃ¡ticas.</p>
+                <p className="text-xs text-[#c3c8c1] mt-1">Estreitamento da base devido a melhoria nas perspectivas climticas.</p>
               </div>
             </div>
           </div>
           <button className="w-full mt-6 py-2 border border-[#434843]/20 rounded-lg text-xs font-bold text-[#c3c8c1] hover:bg-[#1e201e] transition-colors">
-            Ver Todas as NotÃ­cias e Alertas
+            Ver Todas as Noticias e Alertas
           </button>
         </div>
       </section>
 
-      {/* Modal de HistÃ³rico */}
+      {/* Modal de Historico */}
       {showHistoryModal && selectedAsset && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <motion.div 
@@ -412,8 +452,8 @@ export default function MarketData() {
           >
             <div className="p-6 border-b border-[#434843]/10 flex justify-between items-center bg-[#1a1c1a]">
               <div>
-                <h2 className="text-xl font-headline font-bold text-[#e2e3df]">HistÃ³rico: {selectedAsset.name} ({selectedAsset.asset})</h2>
-                <p className="text-xs text-[#c3c8c1]">Consulte dados histÃ³ricos e exporte para anÃ¡lise.</p>
+                <h2 className="text-xl font-headline font-bold text-[#e2e3df]">Historico: {selectedAsset.name} ({selectedAsset.asset})</h2>
+                <p className="text-xs text-[#c3c8c1]">Consulte dados histricos e exporte para analise.</p>
               </div>
               <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-[#333533] rounded-full text-[#c3c8c1]">
                 <X size={20} />
@@ -460,8 +500,8 @@ export default function MarketData() {
                   <tr>
                     <th className="px-6 py-3 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1]">Data</th>
                     <th className="px-4 py-3 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Abertura</th>
-                    <th className="px-4 py-3 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">MÃ¡xima</th>
-                    <th className="px-4 py-3 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">MÃ­nima</th>
+                    <th className="px-4 py-3 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Maxima</th>
+                    <th className="px-4 py-3 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Minima</th>
                     <th className="px-4 py-3 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Fechamento</th>
                     <th className="px-6 py-3 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Volume</th>
                   </tr>
@@ -471,13 +511,13 @@ export default function MarketData() {
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-[#c3c8c1]">
                         <RefreshCw className="animate-spin mx-auto mb-2" size={24} />
-                        Buscando histÃ³rico...
+                        Buscando histrico...
                       </td>
                     </tr>
                   ) : historicalData.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-[#c3c8c1]">
-                        Nenhum dado encontrado para este perÃ­odo.
+                        Nenhum dado encontrado para este periodo.
                       </td>
                     </tr>
                   ) : historicalData.map((h, idx) => (
@@ -499,3 +539,4 @@ export default function MarketData() {
     </motion.div>
   );
 }
+
