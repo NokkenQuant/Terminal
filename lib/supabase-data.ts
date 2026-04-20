@@ -31,6 +31,48 @@ type MetricRow = {
   trend_ema_50_200?: number | null;
 };
 
+type PhysicalPriceRow = {
+  snapshot_date: string;
+  commodity: string;
+  variable: string;
+  unit?: string | null;
+  currency?: string | null;
+  price?: number | null;
+  series_position: number;
+  source?: string | null;
+};
+
+type PhysicalLatestRow = {
+  snapshot_date: string;
+  commodity: string;
+  variable: string;
+  unit?: string | null;
+  currency?: string | null;
+  price?: number | null;
+  source?: string | null;
+};
+
+type PhysicalPanelRow = {
+  data: string;
+  commodity: string;
+  variable: string;
+  unit?: string | null;
+  currency?: string | null;
+  value?: number | null;
+  source?: string | null;
+};
+
+type PhysicalSeriesPoint = {
+  date: string;
+  price: number | null;
+  snapshot_date: string;
+  commodity: string;
+  variable: string;
+  unit: string | null;
+  currency: string | null;
+  series_position: number;
+};
+
 const SYMBOL_TO_ASSET: Record<string, string> = {
   "ZS=F": "SOJA_EUA",
   "ZC=F": "MILHO_EUA",
@@ -45,6 +87,8 @@ function env() {
     supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
     pricesTable: process.env.SUPABASE_PRICES_TABLE || "agro_prices",
     metricsTable: process.env.SUPABASE_METRICS_TABLE || "agro_metrics_analysis",
+    physicalTable: process.env.SUPABASE_PHYSICAL_TABLE || "agro_physical_prices",
+    physicalPanelTable: process.env.SUPABASE_PHYSICAL_PANEL_TABLE || "painel_fisico",
   };
 }
 
@@ -56,6 +100,12 @@ function headers() {
     "Content-Type": "application/json",
   };
 }
+
+const physicalCache = {
+  latest: { at: 0, data: [] as PhysicalLatestRow[] },
+  history: new Map<string, { at: number; data: PhysicalSeriesPoint[] }>(),
+};
+const PHYSICAL_CACHE_TTL_MS = 5 * 60 * 1000;
 
 function ensureEnv() {
   const { supabaseUrl, supabaseKey } = env();
@@ -292,4 +342,71 @@ export async function getAnalysis(symbolOrAsset: string, selectedDate?: string) 
     signal: recommendation,
     signals,
   };
+}
+
+export async function getPhysicalMarketData() {
+  const now = Date.now();
+  if (now - physicalCache.latest.at < PHYSICAL_CACHE_TTL_MS && physicalCache.latest.data.length > 0) {
+    return physicalCache.latest.data;
+  }
+
+  const { physicalPanelTable } = env();
+
+  const params = new URLSearchParams({
+    select: "data,commodity,variable,unit,currency,value,source",
+    order: "commodity.asc,variable.asc",
+    limit: "1500",
+  });
+  const rows = await fetchPaged<PhysicalPanelRow>(physicalPanelTable, params, 1000);
+  const mapped = rows.map((row) => ({
+    snapshot_date: row.data,
+    commodity: row.commodity,
+    variable: row.variable,
+    unit: row.unit || null,
+    currency: row.currency || null,
+    price: row.value == null ? null : toNum(row.value),
+    source: row.source || "CEPEA",
+  }));
+  physicalCache.latest = { at: now, data: mapped };
+  return mapped;
+}
+
+export async function getPhysicalMarketHistory(commodity: string, variable: string, startDate?: string) {
+  const now = Date.now();
+  const key = `${commodity}::${variable}`;
+  const cached = physicalCache.history.get(key);
+  if (cached && now - cached.at < PHYSICAL_CACHE_TTL_MS) {
+    if (!startDate) return cached.data;
+    return cached.data.filter((row) => row.date >= startDate);
+  }
+
+  const { physicalTable } = env();
+  const params = new URLSearchParams({
+    select: "snapshot_date,commodity,variable,unit,currency,price,series_position",
+    commodity: `eq.${commodity}`,
+    variable: `eq.${variable}`,
+    order: "series_position.asc",
+    limit: "3000",
+  });
+  const rows = await fetchPaged<PhysicalPriceRow>(physicalTable, params, 1000);
+  const latestSnapshot = rows[0]?.snapshot_date || new Date().toISOString().slice(0, 10);
+  const baseDate = new Date(latestSnapshot);
+  const series = rows.map((row) => {
+    const pos = Number(row.series_position || 1);
+    const d = new Date(baseDate);
+    d.setDate(baseDate.getDate() - (pos - 1));
+    return {
+      date: d.toISOString().slice(0, 10),
+      price: row.price == null ? null : toNum(row.price),
+      snapshot_date: row.snapshot_date,
+      commodity: row.commodity,
+      variable: row.variable,
+      unit: row.unit || null,
+      currency: row.currency || null,
+      series_position: pos,
+    } as PhysicalSeriesPoint;
+  });
+  physicalCache.history.set(key, { at: now, data: series });
+  if (!startDate) return series;
+  return series.filter((row) => row.date >= startDate);
 }

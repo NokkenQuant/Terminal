@@ -9,6 +9,7 @@ import Sidebar from './components/Sidebar';
 import TopNav from './components/TopNav';
 import Dashboard from './views/Dashboard';
 import MarketData from './views/MarketData';
+import PhysicalMarket from './views/PhysicalMarket';
 import Premium from './views/Premium';
 import Analysis from './views/Analysis';
 import Pricing from './views/Pricing';
@@ -22,6 +23,8 @@ export default function App() {
         return <Dashboard />;
       case 'market-data':
         return <MarketData />;
+      case 'physical-market':
+        return <PhysicalMarket />;
       case 'premium':
         return <Premium />;
       case 'analysis':
@@ -60,6 +63,12 @@ export default function App() {
           <span className="text-[9px] font-bold">Mercados</span>
         </button>
         <button 
+          onClick={() => setCurrentView('physical-market')}
+          className={`flex flex-col items-center gap-1 ${currentView === 'physical-market' ? 'text-[#a1d494]' : 'text-[#c3c8c1] opacity-60'}`}
+        >
+          <span className="text-[9px] font-bold">Fisico</span>
+        </button>
+        <button 
           onClick={() => setCurrentView('premium')}
           className={`flex flex-col items-center gap-1 ${currentView === 'premium' ? 'text-[#a1d494]' : 'text-[#c3c8c1] opacity-60'}`}
         >
@@ -69,4 +78,3 @@ export default function App() {
     </div>
   );
 }
-

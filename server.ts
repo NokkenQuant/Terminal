@@ -3,7 +3,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getAnalysis, getHistorical, getMarketData } from "./lib/supabase-data";
+import { getAnalysis, getHistorical, getMarketData, getPhysicalMarketData, getPhysicalMarketHistory } from "./lib/supabase-data";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +46,33 @@ async function startServer() {
     } catch (error) {
       console.error("Historical data error:", error);
       res.status(500).json({ error: "Failed to fetch historical data from Supabase" });
+    }
+  });
+
+  app.get("/api/physical-market", async (_req, res) => {
+    try {
+      const data = await getPhysicalMarketData();
+      res.json(data);
+    } catch (error) {
+      console.error("Physical market data error:", error);
+      res.status(500).json({ error: "Failed to fetch physical market data from Supabase" });
+    }
+  });
+
+  app.get("/api/physical-market/history", async (req, res) => {
+    try {
+      const commodity = String(req.query.commodity || "");
+      const variable = String(req.query.variable || "");
+      const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
+      if (!commodity || !variable) {
+        res.status(400).json({ error: "commodity and variable are required" });
+        return;
+      }
+      const data = await getPhysicalMarketHistory(commodity, variable, startDate);
+      res.json(data);
+    } catch (error) {
+      console.error("Physical market history error:", error);
+      res.status(500).json({ error: "Failed to fetch physical market history from Supabase" });
     }
   });
 

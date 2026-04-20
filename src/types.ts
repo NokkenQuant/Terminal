@@ -1,4 +1,4 @@
-export type View = 'dashboard' | 'market-data' | 'analysis' | 'premium' | 'portfolio' | 'pricing';
+export type View = 'dashboard' | 'market-data' | 'physical-market' | 'analysis' | 'premium' | 'portfolio' | 'pricing';
 
 export interface CommodityData {
   symbol: string;

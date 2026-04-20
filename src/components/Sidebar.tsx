@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { LayoutDashboard, BarChart3, BrainCircuit, Crown, Package, Settings, HelpCircle, Stars } from 'lucide-react';
 import { View } from '../types';
 
@@ -11,16 +11,17 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
     { id: 'market-data', label: 'Dados de Mercado', icon: BarChart3 },
-    { id: 'analysis', label: 'Análise de Ativos', icon: BrainCircuit },
+    { id: 'physical-market', label: 'Mercado Fisico', icon: BarChart3 },
+    { id: 'analysis', label: 'AnÃ¡lise de Ativos', icon: BrainCircuit },
     { id: 'premium', label: 'Premium', icon: Crown, color: 'text-[#e9c176]' },
-    { id: 'portfolio', label: 'Portfólio', icon: Package },
+    { id: 'portfolio', label: 'PortfÃ³lio', icon: Package },
   ];
 
   return (
     <aside className="fixed left-0 top-0 flex flex-col h-full py-4 bg-[#1a1c1a] w-64 pt-16 z-40 hidden md:flex">
       <div className="px-6 mb-8">
         <h2 className="text-lg font-black text-[#e9c176] font-headline">Terminal v2.4</h2>
-        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">Inteligência Profunda do Solo</p>
+        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">InteligÃªncia Profunda do Solo</p>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -66,7 +67,7 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
         <div className="flex flex-col gap-1 border-t border-[#434843]/20 pt-4">
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <Settings size={14} />
-            <span className="text-xs">Configurações</span>
+            <span className="text-xs">ConfiguraÃ§Ãµes</span>
           </div>
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <HelpCircle size={14} />
@@ -77,3 +78,4 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
     </aside>
   );
 }
+
