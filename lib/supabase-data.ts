@@ -43,6 +43,7 @@ type PhysicalPriceRow = {
 };
 
 type PhysicalLatestRow = {
+  data: string;
   snapshot_date: string;
   commodity: string;
   variable: string;
@@ -359,6 +360,7 @@ export async function getPhysicalMarketData() {
   });
   const rows = await fetchPaged<PhysicalPanelRow>(physicalPanelTable, params, 1000);
   const mapped = rows.map((row) => ({
+    data: row.data,
     snapshot_date: row.data,
     commodity: row.commodity,
     variable: row.variable,

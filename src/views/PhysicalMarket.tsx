@@ -5,6 +5,7 @@ import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tool
 import { getCepeaDownloadLink } from '../data/cepeaLinks';
 
 type PhysicalRow = {
+  data: string;
   snapshot_date: string;
   commodity: string;
   variable: string;
@@ -212,6 +213,9 @@ export default function PhysicalMarket() {
                                 maximumFractionDigits: 2,
                               })}{' '}
                           {row.currency || ''}
+                        </div>
+                        <div className="text-[11px] text-[#9ea39d]">
+                          Data referencia: {new Date(row.data).toLocaleDateString('pt-BR')}
                         </div>
                         <div className="text-[11px] text-[#9ea39d]">{row.unit || '-'}</div>
                       </button>
