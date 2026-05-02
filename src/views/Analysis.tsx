@@ -14,6 +14,36 @@ interface AnalysisMetrics {
   signals?: Record<string, 'compra' | 'venda' | 'neutro'>;
 }
 
+interface MacroAnalysisCard {
+  asset: string;
+  asset_name: string;
+  macro_group: string;
+  family: string;
+  variant: string;
+  trade_date: string;
+  close: number;
+  recommendation: 'compra' | 'venda' | 'neutro';
+  analyses: Array<{
+    code: string;
+    label: string;
+    recommendation: 'compra' | 'venda' | 'neutro';
+    status: 'ready' | 'planned';
+  }>;
+}
+
+interface MacroAnalysis {
+  macro_group: string;
+  selected_date: string | null;
+  available_dates: string[];
+  summary: {
+    total_assets: number;
+    compra: number;
+    venda: number;
+    neutro: number;
+  };
+  cards: MacroAnalysisCard[];
+}
+
 interface MarketAssetInfo {
   name: string;
   ticker: string;
@@ -80,6 +110,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function Analysis() {
+  const macroGroupOptions = ['SOJA', 'MILHO', 'TRIGO', 'CAFE', 'ALGODAO', 'BOI', 'ACUCAR'];
   const [timeframe, setTimeframe] = useState('1D');
   const [viewMode, setViewMode] = useState('technical');
   const [zoom, setZoom] = useState(1);
@@ -87,7 +118,10 @@ export default function Analysis() {
   const [metrics, setMetrics] = useState<AnalysisMetrics | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState('SOJA_EUA');
+  const [selectedMacroGroup, setSelectedMacroGroup] = useState('SOJA');
   const [selectedMetricDate, setSelectedMetricDate] = useState('');
+  const [macroAnalysis, setMacroAnalysis] = useState<MacroAnalysis | null>(null);
+  const [loadingMacroAnalysis, setLoadingMacroAnalysis] = useState(false);
   const [assetOptions, setAssetOptions] = useState<string[]>([]);
   const [marketAssets, setMarketAssets] = useState<MarketAssetInfo[]>([]);
   const [assetHistory, setAssetHistory] = useState<HistoricalPoint[]>([]);
@@ -109,6 +143,34 @@ export default function Analysis() {
     };
     fetchAssets();
   }, []);
+
+  useEffect(() => {
+    const fetchMacroAnalysis = async () => {
+      setLoadingMacroAnalysis(true);
+      try {
+        const q = new URLSearchParams({
+          macro_group: selectedMacroGroup,
+          ...(selectedMetricDate ? { date: selectedMetricDate } : {}),
+        });
+        const response = await fetch(`/api/analysis?${q.toString()}`);
+        const data = await response.json();
+        if (data && !data.error) {
+          setMacroAnalysis(data);
+          if (!selectedMetricDate && data.available_dates?.[0]) {
+            setSelectedMetricDate(data.available_dates[0]);
+          }
+        } else {
+          setMacroAnalysis(null);
+        }
+      } catch (error) {
+        console.error("Error fetching macro analysis:", error);
+        setMacroAnalysis(null);
+      } finally {
+        setLoadingMacroAnalysis(false);
+      }
+    };
+    fetchMacroAnalysis();
+  }, [selectedMacroGroup, selectedMetricDate]);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -194,6 +256,8 @@ export default function Analysis() {
   const max24h = latestHistoryPoint?.high ?? null;
   const min24h = latestHistoryPoint?.low ?? null;
   const volume24h = latestHistoryPoint?.volume ?? null;
+  const signalColor = (signal: 'compra' | 'venda' | 'neutro') =>
+    signal === 'compra' ? 'text-[#a1d494]' : signal === 'venda' ? 'text-[#ffb4ab]' : 'text-[#e9c176]';
 
   return (
     <motion.div 
@@ -412,6 +476,115 @@ export default function Analysis() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div className="bg-[#1e201e] p-6 rounded-xl border border-[#434843]/10">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+              <h3 className="text-lg font-bold font-headline flex items-center gap-2 text-[#e2e3df]">
+                <Activity size={20} className="text-[#a1d494]" />
+                Analises por Macro Grupo
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase text-[#c3c8c1] mb-1 font-bold">Macro grupo</label>
+                  <select
+                    value={selectedMacroGroup}
+                    onChange={(e) => {
+                      setSelectedMacroGroup(e.target.value);
+                      setSelectedMetricDate('');
+                    }}
+                    className="bg-[#0d0f0d] border border-[#434843]/20 rounded-lg py-2 px-3 text-xs text-[#e2e3df]"
+                  >
+                    {macroGroupOptions.map((group) => (
+                      <option key={group} value={group}>{group}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase text-[#c3c8c1] mb-1 font-bold">Data</label>
+                  <select
+                    value={selectedMetricDate}
+                    onChange={(e) => setSelectedMetricDate(e.target.value)}
+                    className="bg-[#0d0f0d] border border-[#434843]/20 rounded-lg py-2 px-3 text-xs text-[#e2e3df]"
+                  >
+                    {(macroAnalysis?.available_dates || metrics?.available_dates || []).map((date) => (
+                      <option key={date} value={date}>{new Date(date).toLocaleDateString('pt-BR')}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {loadingMacroAnalysis ? (
+              <div className="flex items-center justify-center py-8 text-[#c3c8c1]">
+                <RefreshCw className="animate-spin mr-2" size={18} /> Carregando macro grupo...
+              </div>
+            ) : macroAnalysis ? (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                  {[
+                    { label: 'Ativos', value: macroAnalysis.summary.total_assets, tone: 'text-[#e2e3df]' },
+                    { label: 'Compra', value: macroAnalysis.summary.compra, tone: 'text-[#a1d494]' },
+                    { label: 'Venda', value: macroAnalysis.summary.venda, tone: 'text-[#ffb4ab]' },
+                    { label: 'Neutro', value: macroAnalysis.summary.neutro, tone: 'text-[#e9c176]' },
+                  ].map((item) => (
+                    <div key={item.label} className="bg-[#0d0f0d] rounded-lg border border-[#434843]/10 p-3">
+                      <p className="text-[10px] uppercase font-bold text-[#c3c8c1] mb-1">{item.label}</p>
+                      <p className={`text-xl font-black tabular-nums ${item.tone}`}>{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {macroAnalysis.cards.length === 0 ? (
+                    <p className="text-sm text-[#c3c8c1]">Nenhuma analise encontrada para este macro grupo.</p>
+                  ) : (
+                    macroAnalysis.cards.map((card) => (
+                      <button
+                        key={card.asset}
+                        onClick={() => {
+                          setSelectedAsset(card.asset);
+                          setSelectedMetricDate(card.trade_date);
+                        }}
+                        className={`text-left bg-[#0d0f0d] border rounded-lg p-4 transition-colors ${
+                          selectedAsset === card.asset ? 'border-[#a1d494]/60' : 'border-[#434843]/10 hover:border-[#434843]/40'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-bold text-[#e2e3df]">{card.asset_name || card.asset}</p>
+                            <p className="text-[10px] uppercase text-[#c3c8c1]">{card.family} / {card.variant}</p>
+                          </div>
+                          <span className={`text-[10px] uppercase font-black ${signalColor(card.recommendation)}`}>
+                            {card.recommendation}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between text-xs">
+                          <span className="text-[#c3c8c1]">{new Date(card.trade_date).toLocaleDateString('pt-BR')}</span>
+                          <span className="text-[#e2e3df] font-bold tabular-nums">
+                            {card.close.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {card.analyses.map((analysis) => (
+                            <span
+                              key={analysis.code}
+                              className={`text-[10px] uppercase font-bold px-2 py-1 rounded bg-[#1e201e] ${
+                                analysis.status === 'ready' ? signalColor(analysis.recommendation) : 'text-[#c3c8c1]'
+                              }`}
+                            >
+                              {analysis.label}
+                            </span>
+                          ))}
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-center py-8 text-[#c3c8c1]">Erro ao carregar analises por macro grupo.</p>
+            )}
           </div>
 
           {/* Metricas diretas da tabela agro_metrics_analysis */}

@@ -29,6 +29,27 @@ type MetricRow = {
   vol_30d_anualizada?: number | null;
   zscore_252d?: number | null;
   trend_ema_50_200?: number | null;
+  mean_hist_mom_3m?: number | null;
+  mean_hist_vol_30d_anualizada?: number | null;
+  mean_hist_zscore_252d?: number | null;
+  mean_hist_trend_ema_50_200?: number | null;
+  signal_mom_3m?: "compra" | "venda" | "neutro" | null;
+  signal_vol_30d_anualizada?: "compra" | "venda" | "neutro" | null;
+  signal_zscore_252d?: "compra" | "venda" | "neutro" | null;
+  signal_trend_ema_50_200?: "compra" | "venda" | "neutro" | null;
+  recommendation?: "compra" | "venda" | "neutro" | null;
+};
+
+type DimAssetRow = {
+  asset_id?: number | null;
+  asset_code?: string | null;
+  asset_name?: string | null;
+  macro_group?: string | null;
+  family?: string | null;
+  variant?: string | null;
+  region?: string | null;
+  source_slug?: string | null;
+  source_series_id?: string | null;
 };
 
 type PhysicalPriceRow = {
@@ -98,6 +119,25 @@ const SYMBOL_TO_ASSET: Record<string, string> = {
   "ZW=F": "TRIGO_SRW",
   "KC=F": "CAFE_EUA",
   "CT=F": "ALGODAO",
+};
+
+const MACRO_GROUP_KEYWORDS: Record<string, string[]> = {
+  BOI: ["BOI", "BEZERRO"],
+  MILHO: ["MILHO", "CORN"],
+  ACUCAR: ["ACUCAR", "AÇUCAR", "SUGAR"],
+  SOJA: ["SOJA", "SOY"],
+  CAFE: ["CAFE", "CAFÉ", "COFFEE"],
+  TRIGO: ["TRIGO", "WHEAT"],
+  ALGODAO: ["ALGODAO", "ALGODÃO", "COTTON"],
+  ARROZ: ["ARROZ", "RICE"],
+  ETANOL: ["ETANOL"],
+  FEIJAO: ["FEIJAO", "FEIJÃO"],
+  FRANGO: ["FRANGO"],
+  MANDIOCA: ["MANDIOCA"],
+  OVOS: ["OVOS"],
+  SUINO: ["SUINO", "SUÍNO"],
+  TILAPIA: ["TILAPIA", "TILÁPIA"],
+  LEITE: ["LEITE"],
 };
 
 function env() {
@@ -209,6 +249,40 @@ function signalByMean(current: number, mean: number): "compra" | "venda" | "neut
   return "neutro";
 }
 
+function normalizeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase();
+}
+
+function inferMacroGroupFromAsset(asset: string): string {
+  const normalized = normalizeText(asset);
+  for (const [macroGroup, keywords] of Object.entries(MACRO_GROUP_KEYWORDS)) {
+    if (keywords.some((keyword) => normalized.includes(normalizeText(keyword)))) {
+      return macroGroup;
+    }
+  }
+  return "OUTROS";
+}
+
+function dimMatchForAsset(asset: string, dimRows: DimAssetRow[]): DimAssetRow | null {
+  const normalized = normalizeText(asset);
+  return (
+    dimRows.find((row) =>
+      [row.asset_code, row.asset_name, row.source_slug]
+        .filter((value): value is string => Boolean(value))
+        .some((value) => normalizeText(value) === normalized),
+    ) || null
+  );
+}
+
+function metricSignal(row: MetricRow, key: keyof MetricRow, meanKey: keyof MetricRow, signalKey: keyof MetricRow) {
+  const explicit = row[signalKey];
+  if (explicit === "compra" || explicit === "venda" || explicit === "neutro") return explicit;
+  return signalByMean(toNum(row[key]), toNum(row[meanKey]));
+}
+
 function latestMetricValue(rows: MetricRow[], key: keyof MetricRow): number {
   for (const row of rows) {
     const value = row[key];
@@ -302,7 +376,7 @@ export async function getAnalysis(symbolOrAsset: string, selectedDate?: string) 
   const { metricsTable } = env();
   const asset = resolveAsset(symbolOrAsset);
   const metricParams = new URLSearchParams({
-    select: "trade_date,asset,close,mom_3m,vol_30d_anualizada,zscore_252d,trend_ema_50_200",
+    select: "trade_date,asset,close,mom_3m,vol_30d_anualizada,zscore_252d,trend_ema_50_200,signal_mom_3m,signal_vol_30d_anualizada,signal_zscore_252d,signal_trend_ema_50_200,recommendation",
     asset: `eq.${asset}`,
     order: "trade_date.desc",
     limit: "500",
@@ -360,6 +434,154 @@ export async function getAnalysis(symbolOrAsset: string, selectedDate?: string) 
     },
     signal: recommendation,
     signals,
+  };
+}
+
+export async function getAnalysisByMacroGroup(macroGroup = "SOJA", selectedDate?: string) {
+  const { metricsTable } = env();
+  const requestedMacroGroup = normalizeText(macroGroup || "SOJA");
+  const dimParams = new URLSearchParams({
+    select: "asset_id,asset_code,asset_name,macro_group,family,variant,region,source_slug,source_series_id",
+    macro_group: `eq.${requestedMacroGroup}`,
+    order: "asset_name.asc",
+    limit: "1000",
+  });
+
+  let dimRows: DimAssetRow[] = [];
+  try {
+    dimRows = await fetchPaged<DimAssetRow>("dim_assets", dimParams, 1000);
+  } catch (error) {
+    console.warn("dim_assets unavailable for analysis macro filter; using asset-name fallback.", error);
+  }
+
+  const metricParams = new URLSearchParams({
+    select:
+      "trade_date,asset,close,mom_3m,vol_30d_anualizada,zscore_252d,trend_ema_50_200,mean_hist_mom_3m,mean_hist_vol_30d_anualizada,mean_hist_zscore_252d,mean_hist_trend_ema_50_200,signal_mom_3m,signal_vol_30d_anualizada,signal_zscore_252d,signal_trend_ema_50_200,recommendation",
+    order: "trade_date.desc,asset.asc",
+    limit: "10000",
+  });
+  if (selectedDate) {
+    metricParams.set("trade_date", `eq.${selectedDate}`);
+  }
+
+  const metricRows = await fetchPaged<MetricRow>(metricsTable, metricParams, 1000);
+  const latestByAsset = new Map<string, MetricRow>();
+  const availableDates = Array.from(new Set(metricRows.map((row) => row.trade_date))).sort((a, b) => (a < b ? 1 : -1));
+
+  for (const row of metricRows) {
+    if (!row.asset || latestByAsset.has(row.asset)) continue;
+    const dimMatch = dimMatchForAsset(row.asset, dimRows);
+    const inferredMacro = dimMatch?.macro_group || inferMacroGroupFromAsset(row.asset);
+    if (normalizeText(inferredMacro) === requestedMacroGroup) {
+      latestByAsset.set(row.asset, row);
+    }
+  }
+
+  const cards = Array.from(latestByAsset.values()).map((row) => {
+    const dimMatch = dimMatchForAsset(row.asset, dimRows);
+    const signals = {
+      mom_3m: metricSignal(row, "mom_3m", "mean_hist_mom_3m", "signal_mom_3m"),
+      vol_30d_anualizada: metricSignal(
+        row,
+        "vol_30d_anualizada",
+        "mean_hist_vol_30d_anualizada",
+        "signal_vol_30d_anualizada",
+      ),
+      zscore_252d: metricSignal(row, "zscore_252d", "mean_hist_zscore_252d", "signal_zscore_252d"),
+      trend_ema_50_200: metricSignal(
+        row,
+        "trend_ema_50_200",
+        "mean_hist_trend_ema_50_200",
+        "signal_trend_ema_50_200",
+      ),
+    };
+    const recommendation =
+      row.recommendation ||
+      (() => {
+        const score = Object.values(signals).reduce((acc, signal) => acc + (signal === "compra" ? 1 : signal === "venda" ? -1 : 0), 0);
+        return score > 0 ? "compra" : score < 0 ? "venda" : "neutro";
+      })();
+
+    return {
+      asset: row.asset,
+      asset_id: dimMatch?.asset_id ?? null,
+      asset_name: dimMatch?.asset_name || row.asset,
+      asset_code: dimMatch?.asset_code || null,
+      macro_group: dimMatch?.macro_group || inferMacroGroupFromAsset(row.asset),
+      family: dimMatch?.family || dimMatch?.macro_group || inferMacroGroupFromAsset(row.asset),
+      variant: dimMatch?.variant || "PADRAO",
+      region: dimMatch?.region || null,
+      trade_date: row.trade_date,
+      close: round(toNum(row.close), 2),
+      recommendation,
+      signals,
+      metrics: [
+        {
+          code: "mom_3m",
+          label: "Momentum 3M",
+          value: round(toNum(row.mom_3m), 4),
+          historical_mean: round(toNum(row.mean_hist_mom_3m), 4),
+          signal: signals.mom_3m,
+          status: "ready",
+        },
+        {
+          code: "vol_30d_anualizada",
+          label: "Volatilidade 30D anualizada",
+          value: round(toNum(row.vol_30d_anualizada), 4),
+          historical_mean: round(toNum(row.mean_hist_vol_30d_anualizada), 4),
+          signal: signals.vol_30d_anualizada,
+          status: "ready",
+        },
+        {
+          code: "zscore_252d",
+          label: "Z-score 252D",
+          value: round(toNum(row.zscore_252d), 4),
+          historical_mean: round(toNum(row.mean_hist_zscore_252d), 4),
+          signal: signals.zscore_252d,
+          status: "ready",
+        },
+        {
+          code: "trend_ema_50_200",
+          label: "Tendencia EMA 50/200",
+          value: round(toNum(row.trend_ema_50_200), 4),
+          historical_mean: round(toNum(row.mean_hist_trend_ema_50_200), 4),
+          signal: signals.trend_ema_50_200,
+          status: "ready",
+        },
+      ],
+      analyses: [
+        {
+          code: "quant_metrics",
+          label: "Metricas quantitativas",
+          recommendation,
+          status: "ready",
+        },
+        {
+          code: "fundamentals_conab",
+          label: "Fundamentos CONAB",
+          recommendation: "neutro",
+          status: "planned",
+        },
+      ],
+    };
+  });
+
+  const summary = cards.reduce(
+    (acc, card) => {
+      acc.total_assets += 1;
+      acc[card.recommendation] += 1;
+      return acc;
+    },
+    { total_assets: 0, compra: 0, venda: 0, neutro: 0 } as Record<"total_assets" | "compra" | "venda" | "neutro", number>,
+  );
+
+  return {
+    macro_group: requestedMacroGroup,
+    selected_date: selectedDate || cards[0]?.trade_date || null,
+    available_dates: availableDates,
+    summary,
+    cards,
+    schema_version: "analysis_macro_group.v1",
   };
 }
 

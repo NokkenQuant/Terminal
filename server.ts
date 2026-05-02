@@ -3,7 +3,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getAnalysis, getHistorical, getMarketData, getPhysicalMarketData, getPhysicalMarketHistory } from "./lib/supabase-data";
+import { getAnalysis, getAnalysisByMacroGroup, getHistorical, getMarketData, getPhysicalMarketData, getPhysicalMarketHistory } from "./lib/supabase-data";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,9 +27,22 @@ async function startServer() {
     }
   });
 
+  app.get("/api/analysis", async (req, res) => {
+    try {
+      const macroGroup = String(req.query.macro_group || req.query.macroGroup || "SOJA");
+      const selectedDate = req.query.date ? String(req.query.date) : undefined;
+      const data = await getAnalysisByMacroGroup(macroGroup, selectedDate);
+      res.json(data);
+    } catch (error) {
+      console.error("Macro analysis data error:", error);
+      res.status(500).json({ error: "Failed to fetch macro analysis data from Supabase" });
+    }
+  });
+
   app.get("/api/analysis/:symbol", async (req, res) => {
     try {
-      const data = await getAnalysis(req.params.symbol);
+      const selectedDate = req.query.date ? String(req.query.date) : undefined;
+      const data = await getAnalysis(req.params.symbol, selectedDate);
       res.json(data);
     } catch (error) {
       console.error("Analysis data error:", error);
