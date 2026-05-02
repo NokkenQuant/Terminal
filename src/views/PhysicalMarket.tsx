@@ -13,6 +13,15 @@ type PhysicalRow = {
   currency?: string | null;
   price?: number | null;
   source?: string | null;
+  asset_id?: number | null;
+  asset_code?: string | null;
+  asset_name?: string | null;
+  macro_group?: string | null;
+  family?: string | null;
+  variant?: string | null;
+  region?: string | null;
+  match_status?: string | null;
+  matched_by?: string | null;
 };
 
 type PhysicalSeriesPoint = {

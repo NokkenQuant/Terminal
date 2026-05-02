@@ -51,6 +51,15 @@ type PhysicalLatestRow = {
   currency?: string | null;
   price?: number | null;
   source?: string | null;
+  asset_id?: number | null;
+  asset_code?: string | null;
+  asset_name?: string | null;
+  macro_group?: string | null;
+  family?: string | null;
+  variant?: string | null;
+  region?: string | null;
+  match_status?: string | null;
+  matched_by?: string | null;
 };
 
 type PhysicalPanelRow = {
@@ -61,6 +70,15 @@ type PhysicalPanelRow = {
   currency?: string | null;
   value?: number | null;
   source?: string | null;
+  asset_id?: number | null;
+  asset_code?: string | null;
+  asset_name?: string | null;
+  macro_group?: string | null;
+  family?: string | null;
+  variant?: string | null;
+  region?: string | null;
+  match_status?: string | null;
+  matched_by?: string | null;
 };
 
 type PhysicalSeriesPoint = {
@@ -353,12 +371,23 @@ export async function getPhysicalMarketData() {
 
   const { physicalPanelTable } = env();
 
-  const params = new URLSearchParams({
+  const enrichedParams = new URLSearchParams({
+    select: "data,commodity,variable,unit,currency,value,source,asset_id,asset_code,asset_name,macro_group,family,variant,region,match_status,matched_by",
+    order: "commodity.asc,variable.asc",
+    limit: "1500",
+  });
+  const legacyParams = new URLSearchParams({
     select: "data,commodity,variable,unit,currency,value,source",
     order: "commodity.asc,variable.asc",
     limit: "1500",
   });
-  const rows = await fetchPaged<PhysicalPanelRow>(physicalPanelTable, params, 1000);
+  let rows: PhysicalPanelRow[];
+  try {
+    rows = await fetchPaged<PhysicalPanelRow>(physicalPanelTable, enrichedParams, 1000);
+  } catch (error) {
+    console.warn("Physical panel enriched columns unavailable; falling back to legacy select.", error);
+    rows = await fetchPaged<PhysicalPanelRow>(physicalPanelTable, legacyParams, 1000);
+  }
   const mapped = rows.map((row) => ({
     data: row.data,
     snapshot_date: row.data,
@@ -368,6 +397,15 @@ export async function getPhysicalMarketData() {
     currency: row.currency || null,
     price: row.value == null ? null : toNum(row.value),
     source: row.source || "CEPEA",
+    asset_id: row.asset_id ?? null,
+    asset_code: row.asset_code || null,
+    asset_name: row.asset_name || null,
+    macro_group: row.macro_group || "OUTROS",
+    family: row.family || "OUTROS",
+    variant: row.variant || "PADRAO",
+    region: row.region || null,
+    match_status: row.match_status || "unmatched",
+    matched_by: row.matched_by || "fallback_outros",
   }));
   physicalCache.latest = { at: now, data: mapped };
   return mapped;
