@@ -12,16 +12,16 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
     { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
     { id: 'market-data', label: 'Dados de Mercado', icon: BarChart3 },
     { id: 'physical-market', label: 'Mercado Fisico', icon: BarChart3 },
-    { id: 'analysis', label: 'AnÃ¡lise de Ativos', icon: BrainCircuit },
+    { id: 'analysis', label: 'Análise de Ativos', icon: BrainCircuit },
     { id: 'premium', label: 'Premium', icon: Crown, color: 'text-[#e9c176]' },
-    { id: 'portfolio', label: 'PortfÃ³lio', icon: Package },
+    { id: 'portfolio', label: 'Portfólio', icon: Package },
   ];
 
   return (
     <aside className="fixed left-0 top-0 flex flex-col h-full py-4 bg-[#1a1c1a] w-64 pt-16 z-40 hidden md:flex">
       <div className="px-6 mb-8">
-        <h2 className="text-lg font-black text-[#e9c176] font-headline">Terminal v2.4</h2>
-        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">InteligÃªncia Profunda do Solo</p>
+        <h2 className="text-lg font-black text-[#e9c176] font-headline">Dados Agro</h2>
+        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">Inteligência Profunda do Solo</p>
       </div>
 
       <nav className="flex-1 space-y-1">
