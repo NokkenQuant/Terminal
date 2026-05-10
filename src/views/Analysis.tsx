@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Search, Bell, TrendingUp, User, Sprout, Database, ArrowUp, ArrowDown, Lock, ShoppingCart, Info, Star, ArrowUpRight, ArrowDownRight, Maximize2, ZoomIn, ZoomOut, MoveHorizontal, Activity, Shield, Zap, RefreshCw } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import MacroGroupSelector from '../components/MacroGroupSelector';
+import { useSharedMacroGroup } from '../hooks/useSharedMacroGroup';
 
 interface AnalysisMetrics {
   mom_3m: number;
@@ -110,7 +112,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function Analysis() {
-  const macroGroupOptions = ['SOJA', 'MILHO', 'TRIGO', 'CAFE', 'ALGODAO', 'BOI', 'ACUCAR'];
   const [timeframe, setTimeframe] = useState('1D');
   const [viewMode, setViewMode] = useState('technical');
   const [zoom, setZoom] = useState(1);
@@ -118,7 +119,7 @@ export default function Analysis() {
   const [metrics, setMetrics] = useState<AnalysisMetrics | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState('SOJA_EUA');
-  const [selectedMacroGroup, setSelectedMacroGroup] = useState('SOJA');
+  const [selectedMacroGroup, setSelectedMacroGroup] = useSharedMacroGroup('SOJA');
   const [selectedMetricDate, setSelectedMetricDate] = useState('');
   const [macroAnalysis, setMacroAnalysis] = useState<MacroAnalysis | null>(null);
   const [loadingMacroAnalysis, setLoadingMacroAnalysis] = useState(false);
@@ -486,19 +487,15 @@ export default function Analysis() {
               </h3>
               <div className="flex flex-wrap gap-3">
                 <div>
-                  <label className="block text-[10px] uppercase text-[#c3c8c1] mb-1 font-bold">Macro grupo</label>
-                  <select
+                  <MacroGroupSelector
                     value={selectedMacroGroup}
-                    onChange={(e) => {
-                      setSelectedMacroGroup(e.target.value);
+                    onChange={(value) => {
+                      setSelectedMacroGroup(value);
                       setSelectedMetricDate('');
                     }}
-                    className="bg-[#0d0f0d] border border-[#434843]/20 rounded-lg py-2 px-3 text-xs text-[#e2e3df]"
-                  >
-                    {macroGroupOptions.map((group) => (
-                      <option key={group} value={group}>{group}</option>
-                    ))}
-                  </select>
+                    includeAll={false}
+                    label="Macro grupo"
+                  />
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase text-[#c3c8c1] mb-1 font-bold">Data</label>
@@ -573,7 +570,7 @@ export default function Analysis() {
                                 analysis.status === 'ready' ? signalColor(analysis.recommendation) : 'text-[#c3c8c1]'
                               }`}
                             >
-                              {analysis.label}
+                              {analysis.status === 'planned' ? `Planejado: ${analysis.label}` : analysis.label}
                             </span>
                           ))}
                         </div>

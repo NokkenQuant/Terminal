@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Search, Filter, Download, Bell, Star, Ship, Info, RefreshCw, History, X } from 'lucide-react';
+import { Search, Filter, FileDown, Bell, Star, Ship, Info, RefreshCw, ArrowDownToLine, X } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
 interface CommodityData {
@@ -218,7 +218,7 @@ export default function MarketData() {
               onClick={downloadCSV}
               className="flex-1 bg-[#a1d494] text-[#0a3909] text-xs font-bold rounded-lg flex items-center justify-center gap-2"
             >
-              <Download size={14} /> Exportar
+              <FileDown size={14} /> Baixar CSV
             </button>
           </div>
         </div>
@@ -278,7 +278,7 @@ export default function MarketData() {
                     {c.change > 0 ? '+' : ''}{c.changePercent.toFixed(2)}%
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex justify-end gap-2 opacity-100">
                       <button 
                         onClick={(event) => {
                           event.stopPropagation();
@@ -286,13 +286,28 @@ export default function MarketData() {
                           setShowHistoryModal(true);
                           fetchHistoricalData(c.asset);
                         }}
-                        className="p-1.5 hover:bg-[#1e201e] rounded-md text-[#a1d494]"
-                        title="Ver Historico"
+                        className="p-1.5 rounded-md text-[#a1d494] bg-[#111311] border border-[#434843]/30 hover:border-[#a1d494]/60"
+                        title="Baixar historico"
+                        aria-label="Baixar historico"
                       >
-                        <History size={14} />
+                        <ArrowDownToLine size={14} />
                       </button>
-                      <button className="p-1.5 hover:bg-[#1e201e] rounded-md"><Bell size={14} /></button>
-                      <button className="p-1.5 hover:bg-[#1e201e] rounded-md"><Star size={14} /></button>
+                      <button
+                        className="p-1.5 rounded-md text-[#c3c8c1] bg-[#111311] border border-[#434843]/30 hover:border-[#e9c349]/60"
+                        title="Criar alerta"
+                        aria-label="Criar alerta"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <Bell size={14} />
+                      </button>
+                      <button
+                        className="p-1.5 rounded-md text-[#c3c8c1] bg-[#111311] border border-[#434843]/30 hover:border-[#e9c349]/60"
+                        title="Favoritar ativo"
+                        aria-label="Favoritar ativo"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <Star size={14} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -490,7 +505,7 @@ export default function MarketData() {
                 disabled={historicalData.length === 0}
                 className="bg-[#a1d494] text-[#0a3909] px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 disabled:opacity-50"
               >
-                <Download size={14} /> Baixar CSV
+                <FileDown size={14} /> Baixar historico CSV
               </button>
             </div>
 

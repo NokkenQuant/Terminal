@@ -174,6 +174,20 @@ function ensureEnv() {
 }
 
 function toNum(value: unknown): number {
+  if (typeof value === "string") {
+    const raw = value.trim();
+    if (!raw) return 0;
+    const hasComma = raw.includes(",");
+    const hasDot = raw.includes(".");
+    const normalized =
+      hasComma && hasDot
+        ? raw.replace(/\./g, "").replace(",", ".")
+        : hasComma
+          ? raw.replace(",", ".")
+          : raw;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
 }
@@ -647,27 +661,29 @@ export async function getPhysicalMarketHistory(commodity: string, variable: stri
     select: "snapshot_date,commodity,variable,unit,currency,price,series_position",
     commodity: `eq.${commodity}`,
     variable: `eq.${variable}`,
-    order: "series_position.asc",
+    order: "snapshot_date.asc,series_position.asc",
     limit: "3000",
   });
   const rows = await fetchPaged<PhysicalPriceRow>(physicalTable, params, 1000);
-  const latestSnapshot = rows[0]?.snapshot_date || new Date().toISOString().slice(0, 10);
-  const baseDate = new Date(latestSnapshot);
-  const series = rows.map((row) => {
+
+  const bySnapshotDate = new Map<string, PhysicalSeriesPoint>();
+  for (const row of rows) {
+    const snapshotDate = (row.snapshot_date || "").slice(0, 10);
+    if (!snapshotDate) continue;
     const pos = Number(row.series_position || 1);
-    const d = new Date(baseDate);
-    d.setDate(baseDate.getDate() - (pos - 1));
-    return {
-      date: d.toISOString().slice(0, 10),
+    bySnapshotDate.set(snapshotDate, {
+      date: snapshotDate,
       price: row.price == null ? null : toNum(row.price),
-      snapshot_date: row.snapshot_date,
+      snapshot_date: snapshotDate,
       commodity: row.commodity,
       variable: row.variable,
       unit: row.unit || null,
       currency: row.currency || null,
       series_position: pos,
-    } as PhysicalSeriesPoint;
-  });
+    });
+  }
+
+  const series = Array.from(bySnapshotDate.values()).sort((a, b) => a.date.localeCompare(b.date));
   physicalCache.history.set(key, { at: now, data: series });
   if (!startDate) return series;
   return series.filter((row) => row.date >= startDate);

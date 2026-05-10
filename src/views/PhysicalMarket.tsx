@@ -3,6 +3,9 @@ import { motion } from 'motion/react';
 import { Download, RefreshCw } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { getCepeaDownloadLink } from '../data/cepeaLinks';
+import MacroGroupSelector from '../components/MacroGroupSelector';
+import { ALL_MACRO_GROUPS, normalizeMacroGroup } from '../data/macroGroups';
+import { useSharedMacroGroup } from '../hooks/useSharedMacroGroup';
 
 type PhysicalRow = {
   data: string;
@@ -33,8 +36,16 @@ type PhysicalSeriesPoint = {
   currency?: string | null;
 };
 
+function formatIsoDatePtBr(isoDate: string): string {
+  if (!isoDate || !isoDate.includes('-')) return isoDate;
+  const [year, month, day] = isoDate.slice(0, 10).split('-');
+  if (!year || !month || !day) return isoDate;
+  return `${day}/${month}/${year}`;
+}
+
 export default function PhysicalMarket() {
   const [rows, setRows] = useState<PhysicalRow[]>([]);
+  const [selectedMacroGroup, setSelectedMacroGroup] = useSharedMacroGroup();
   const [selectedCommodities, setSelectedCommodities] = useState<string[]>([]);
   const [selectedSerie, setSelectedSerie] = useState<{ commodity: string; variable: string } | null>(null);
   const [history, setHistory] = useState<PhysicalSeriesPoint[]>([]);
@@ -60,17 +71,31 @@ export default function PhysicalMarket() {
     fetchData();
   }, []);
 
+  const filteredRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        if (selectedMacroGroup === ALL_MACRO_GROUPS) return true;
+        return normalizeMacroGroup(row.macro_group) === selectedMacroGroup;
+      }),
+    [rows, selectedMacroGroup],
+  );
+
   const commodities = useMemo(
-    () => Array.from(new Set<string>(rows.map((row) => row.commodity))).sort((a, b) => a.localeCompare(b)),
-    [rows],
+    () => Array.from(new Set<string>(filteredRows.map((row) => row.commodity))).sort((a, b) => a.localeCompare(b)),
+    [filteredRows],
   );
 
   useEffect(() => {
     if (commodities.length === 0) return;
-    if (selectedCommodities.length === 0) {
+    const validSelection = selectedCommodities.filter((commodity) => commodities.includes(commodity));
+    if (validSelection.length === 0) {
       setSelectedCommodities([commodities[0]]);
+      return;
     }
-  }, [commodities, selectedCommodities.length]);
+    if (validSelection.length !== selectedCommodities.length) {
+      setSelectedCommodities(validSelection);
+    }
+  }, [commodities, selectedCommodities]);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -97,14 +122,14 @@ export default function PhysicalMarket() {
 
   const rowsByCommodity = useMemo(() => {
     const grouped = new Map<string, PhysicalRow[]>();
-    rows.forEach((row) => {
+    filteredRows.forEach((row) => {
       const list = grouped.get(row.commodity) || [];
       list.push(row);
       grouped.set(row.commodity, list);
     });
     grouped.forEach((list) => list.sort((a, b) => a.variable.localeCompare(b.variable)));
     return grouped;
-  }, [rows]);
+  }, [filteredRows]);
 
   const selectedCards = useMemo(
     () => selectedCommodities.map((commodity) => ({ commodity, rows: rowsByCommodity.get(commodity) || [] })),
@@ -112,7 +137,18 @@ export default function PhysicalMarket() {
   );
 
   useEffect(() => {
-    if (!selectedSerie && selectedCards.length > 0 && selectedCards[0].rows.length > 0) {
+    if (selectedCards.length === 0 || selectedCards[0].rows.length === 0) {
+      setSelectedSerie(null);
+      return;
+    }
+
+    const hasSelectedSerie = selectedCards.some((card) =>
+      card.rows.some(
+        (row) => row.commodity === selectedSerie?.commodity && row.variable === selectedSerie?.variable,
+      ),
+    );
+
+    if (!selectedSerie || !hasSelectedSerie) {
       setSelectedSerie({
         commodity: selectedCards[0].commodity,
         variable: selectedCards[0].rows[0].variable,
@@ -122,7 +158,7 @@ export default function PhysicalMarket() {
 
   const latestDate = rows[0]?.snapshot_date;
   const chartData = history.map((p) => ({
-    date: new Date(p.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+    date: p.date,
     price: p.price,
   }));
 
@@ -147,6 +183,10 @@ export default function PhysicalMarket() {
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Atualizar
           </button>
+        </div>
+
+        <div className="mb-3">
+          <MacroGroupSelector value={selectedMacroGroup} onChange={setSelectedMacroGroup} includeAll label="Macro grupo" />
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -279,11 +319,19 @@ export default function PhysicalMarket() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid stroke="#2a2d2a" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: '#9da39d', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#2a2d2a' }} minTickGap={24} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: '#9da39d', fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#2a2d2a' }}
+                    minTickGap={24}
+                    tickFormatter={(value) => formatIsoDatePtBr(String(value)).slice(0, 5)}
+                  />
                   <YAxis tick={{ fill: '#9da39d', fontSize: 11 }} tickLine={false} axisLine={{ stroke: '#2a2d2a' }} domain={['auto', 'auto']} width={70} />
                   <Tooltip
                     contentStyle={{ background: '#121412', border: '1px solid #2a2d2a', borderRadius: 8, color: '#e2e3df' }}
                     labelStyle={{ color: '#c3c8c1', fontSize: 12 }}
+                    labelFormatter={(value) => formatIsoDatePtBr(String(value))}
                   />
                   <Area type="monotone" dataKey="price" stroke="#4ec9b0" strokeWidth={2} fill="url(#physicalArea)" />
                 </AreaChart>
