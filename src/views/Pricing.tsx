@@ -15,7 +15,7 @@ export default function Pricing() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#121412] via-[#121412]/80 to-transparent z-10"></div>
           <img 
             className="w-full h-full object-cover opacity-40" 
-            src="https://picsum.photos/seed/wheat-storm/1200/600" 
+            src="https://images.unsplash.com/photo-1495107334309-fcf20504a5ab?auto=format&fit=crop&w=1200&q=80" 
             alt="Campo de trigo dramático"
             referrerPolicy="no-referrer"
           />
@@ -209,7 +209,7 @@ export default function Pricing() {
             <a className="hover:text-[#a1d494]" href="#">Contatar Suporte</a>
           </div>
           <div className="text-xs text-[#c3c8c1] opacity-60">
-            © 2024 AGRI-TERMINAL TECHNOLOGIES. TODOS OS DIREITOS RESERVADOS.
+            © 2026 AGRI-TERMINAL TECHNOLOGIES. TODOS OS DIREITOS RESERVADOS.
           </div>
         </div>
       </footer>

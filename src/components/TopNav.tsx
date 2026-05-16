@@ -13,42 +13,53 @@ export default function TopNav({ currentView, onViewChange }: TopNavProps) {
       <div className="flex items-center gap-8">
         <span className="text-xl font-bold tracking-tight text-[#a1d494] font-headline">AGRI-TERMINAL</span>
         <div className="hidden md:flex items-center gap-6">
-          <button 
+          <button
             onClick={() => onViewChange('dashboard')}
             className={`text-sm font-semibold px-1 h-14 flex items-center transition-all ${currentView === 'dashboard' ? 'text-[#a1d494] border-b-2 border-[#a1d494]' : 'text-[#e2e3df] opacity-70 hover:opacity-100'}`}
           >
             Painel de Mercado
           </button>
-          <button className="text-sm text-[#e2e3df] opacity-70 hover:bg-[#1e201e] transition-colors duration-200 px-2 py-1 rounded">
+          <button
+            className="text-sm text-[#e2e3df] opacity-45 cursor-not-allowed px-2 py-1 rounded flex items-center gap-2"
+            title="Módulo em breve"
+            aria-disabled="true"
+          >
             Visão Global
+            <span className="text-[9px] uppercase tracking-widest text-[#c3c8c1]">Em breve</span>
           </button>
-          <button className="text-sm text-[#e2e3df] opacity-70 hover:bg-[#1e201e] transition-colors duration-200 px-2 py-1 rounded">
+          <button
+            className="text-sm text-[#e2e3df] opacity-45 cursor-not-allowed px-2 py-1 rounded flex items-center gap-2"
+            title="Módulo em breve"
+            aria-disabled="true"
+          >
             Sazonalidade
+            <span className="text-[9px] uppercase tracking-widest text-[#c3c8c1]">Em breve</span>
           </button>
         </div>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="relative group">
+        <div className="relative group hidden sm:block">
           <div className="flex items-center bg-[#0d0f0d] px-3 py-1.5 rounded-lg border border-[#434843]/20 group-focus-within:border-[#a1d494] transition-all">
             <Search size={14} className="text-[#c3c8c1] mr-2" />
-            <input 
-              type="text" 
-              className="bg-transparent border-none focus:ring-0 text-xs w-64 placeholder:text-[#c3c8c1]/50 text-[#e2e3df]" 
-              placeholder="Pesquisar commodities, notícias, tickers..." 
+            <input
+              type="text"
+              className="bg-transparent border-none focus:ring-0 text-xs w-56 lg:w-64 placeholder:text-[#c3c8c1]/50 text-[#e2e3df]"
+              placeholder="Pesquisar commodities, notícias, tickers..."
+              aria-label="Pesquisar commodities, notícias e tickers"
             />
-            <span className="text-[10px] bg-[#1e201e] px-1.5 py-0.5 rounded text-[#c3c8c1]">CMD + K</span>
+            <span className="text-[10px] bg-[#1e201e] px-1.5 py-0.5 rounded text-[#c3c8c1]">Ctrl K</span>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <button className="text-[#c3c8c1] hover:text-[#a1d494] transition-colors">
+          <button className="text-[#c3c8c1] hover:text-[#a1d494] transition-colors" title="Alertas em breve" aria-label="Alertas em breve">
             <Bell size={18} />
           </button>
-          <button className="text-[#c3c8c1] hover:text-[#a1d494] transition-colors">
+          <button className="text-[#c3c8c1] hover:text-[#a1d494] transition-colors" title="Resumo de tendência em breve" aria-label="Resumo de tendência em breve">
             <TrendingUp size={18} />
           </button>
-          <button className="text-[#a1d494]">
+          <button className="text-[#a1d494]" title="Perfil" aria-label="Perfil">
             <User size={20} />
           </button>
         </div>

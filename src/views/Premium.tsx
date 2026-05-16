@@ -54,7 +54,7 @@ export default function Premium() {
           <div className="h-[460px] w-full bg-[#0d0f0d] relative overflow-hidden">
             <img 
               className="w-full h-full object-cover opacity-60 grayscale-[0.5] contrast-125" 
-              src="https://picsum.photos/seed/agriculture-map/1200/800" 
+              src="https://images.unsplash.com/photo-1523741543316-beb7fc7023d8?auto=format&fit=crop&w=1200&q=80" 
               alt="Mapa de satélite"
               referrerPolicy="no-referrer"
             />
@@ -220,11 +220,11 @@ export default function Premium() {
       <div className="mt-8 pt-6 border-t border-[#434843]/10 flex items-center justify-between text-[10px] font-mono text-[#c3c8c1] opacity-60">
         <div className="flex gap-6">
           <span>STATUS DO SISTEMA: IDEAL</span>
-          <span>ATUALIZAÇÃO DE DADOS: 0,2s</span>
+          <span>ATUALIZAÇÃO DE DADOS: sob demanda</span>
           <span>ENDPOINT DA API: AGRI-PRO-04</span>
         </div>
         <div>
-          © 2024 UNIDADE DE INTELIGÊNCIA AGRI-TERMINAL. TODOS OS DIREITOS RESERVADOS.
+          © 2026 UNIDADE DE INTELIGÊNCIA AGRI-TERMINAL. TODOS OS DIREITOS RESERVADOS.
         </div>
       </div>
 

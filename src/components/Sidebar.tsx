@@ -11,10 +11,10 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
     { id: 'market-data', label: 'Dados de Mercado', icon: BarChart3 },
-    { id: 'physical-market', label: 'Mercado Fisico', icon: BarChart3 },
+    { id: 'physical-market', label: 'Mercado Físico', icon: BarChart3 },
     { id: 'analysis', label: 'Análise de Ativos', icon: BrainCircuit },
     { id: 'premium', label: 'Premium', icon: Crown, color: 'text-[#e9c176]' },
-    { id: 'portfolio', label: 'Portfólio', icon: Package },
+    { id: 'portfolio', label: 'Portfólio', icon: Package, disabled: true },
   ];
 
   return (
@@ -31,17 +31,21 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
           return (
             <div
               key={item.id}
-              onClick={() => onViewChange(item.id as View)}
+              onClick={() => !item.disabled && onViewChange(item.id as View)}
+              title={item.disabled ? 'Em breve' : item.label}
               className={`
-                flex items-center px-6 py-3 gap-3 cursor-pointer transition-all
+                flex items-center px-6 py-3 gap-3 transition-all
                 ${isActive 
                   ? 'bg-[#1e201e] text-[#a1d494] rounded-r-full mr-4' 
-                  : 'text-[#e2e3df] opacity-60 hover:text-[#a1d494] hover:bg-[#292a28]'
+                  : item.disabled
+                    ? 'text-[#e2e3df] opacity-35 cursor-not-allowed'
+                    : 'text-[#e2e3df] opacity-60 hover:text-[#a1d494] hover:bg-[#292a28] cursor-pointer'
                 }
               `}
             >
               <Icon size={18} className={isActive ? 'fill-current' : ''} />
               <span className="text-sm font-medium">{item.label}</span>
+              {item.disabled && <span className="ml-auto text-[9px] uppercase tracking-widest text-[#c3c8c1]">Em breve</span>}
             </div>
           );
         })}
@@ -67,7 +71,7 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
         <div className="flex flex-col gap-1 border-t border-[#434843]/20 pt-4">
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <Settings size={14} />
-            <span className="text-xs">ConfiguraÃ§Ãµes</span>
+            <span className="text-xs">Configurações</span>
           </div>
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <HelpCircle size={14} />
@@ -78,4 +82,3 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
     </aside>
   );
 }
-

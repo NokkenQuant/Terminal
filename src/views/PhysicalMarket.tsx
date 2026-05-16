@@ -171,9 +171,9 @@ export default function PhysicalMarket() {
       <section className="mb-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4">
           <div>
-            <h1 className="text-4xl font-headline font-extrabold text-[#e2e3df] tracking-tight mb-2">Mercado Fisico CEPEA</h1>
+            <h1 className="text-4xl font-headline font-extrabold text-[#e2e3df] tracking-tight mb-2">Mercado Físico CEPEA</h1>
             <p className="text-[#c3c8c1] text-sm">
-              Snapshot mais recente por commodity e variavel.
+              Snapshot mais recente por commodity e variável.
               {latestDate ? ` Data: ${new Date(latestDate).toLocaleDateString('pt-BR')}` : ''}
             </p>
           </div>
@@ -230,7 +230,7 @@ export default function PhysicalMarket() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#333533] text-[#e2e3df] hover:bg-[#3d403d]"
                 >
-                  <Download size={13} /> Download historico
+                  <Download size={13} /> Download histórico
                 </a>
               </div>
               {card.rows.length === 0 ? (
@@ -264,7 +264,7 @@ export default function PhysicalMarket() {
                           {row.currency || ''}
                         </div>
                         <div className="text-[11px] text-[#9ea39d]">
-                          Data referencia: {new Date(row.data).toLocaleDateString('pt-BR')}
+                          Data referência: {new Date(row.data).toLocaleDateString('pt-BR')}
                         </div>
                         <div className="text-[11px] text-[#9ea39d]">{row.unit || '-'}</div>
                       </button>
@@ -282,7 +282,7 @@ export default function PhysicalMarket() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-headline font-bold text-[#e2e3df]">
-                Grafico CEPEA: {selectedSerie.commodity}
+                Gráfico CEPEA: {selectedSerie.commodity}
               </h2>
               <p className="text-xs text-[#c3c8c1]">{selectedSerie.variable}</p>
             </div>
@@ -303,11 +303,11 @@ export default function PhysicalMarket() {
             {loadingHistory ? (
               <div className="h-full flex items-center justify-center text-[#c3c8c1] text-sm">
                 <RefreshCw className="animate-spin mr-2" size={16} />
-                Carregando serie historica...
+                Carregando série histórica...
               </div>
             ) : chartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-[#c3c8c1] text-sm">
-                Sem historico disponivel.
+                Sem histórico disponível.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">

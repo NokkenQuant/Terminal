@@ -95,8 +95,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-[10px] font-bold text-[#c3c8c1] mb-1 uppercase tracking-widest">{label}</p>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[#a1d494]"></div>
-          <p className="text-sm font-bold text-[#e2e3df]">
-            Preco: <span className="tabular-nums">{payload[0].value.toFixed(2)}</span>
+        <p className="text-sm font-bold text-[#e2e3df]">
+            Preço: <span className="tabular-nums">{payload[0].value.toFixed(2)}</span>
           </p>
         </div>
         <div className="flex items-center gap-2 mt-1">
@@ -126,6 +126,7 @@ export default function Analysis() {
   const [assetOptions, setAssetOptions] = useState<string[]>([]);
   const [marketAssets, setMarketAssets] = useState<MarketAssetInfo[]>([]);
   const [assetHistory, setAssetHistory] = useState<HistoricalPoint[]>([]);
+  const [actionNotice, setActionNotice] = useState('');
 
   useEffect(() => {
     const fetchAssets = async () => {
@@ -259,6 +260,10 @@ export default function Analysis() {
   const volume24h = latestHistoryPoint?.volume ?? null;
   const signalColor = (signal: 'compra' | 'venda' | 'neutro') =>
     signal === 'compra' ? 'text-[#a1d494]' : signal === 'venda' ? 'text-[#ffb4ab]' : 'text-[#e9c176]';
+  const notifyAction = (message: string) => {
+    setActionNotice(message);
+    window.setTimeout(() => setActionNotice(''), 2500);
+  };
 
   return (
     <motion.div 
@@ -326,7 +331,7 @@ export default function Analysis() {
 
       {/* Layout Principal do Workspace */}
       <div className="grid grid-cols-12 gap-6">
-        {/* Esquerda: Grafico Tecnico e Tabela */}
+        {/* Esquerda: Gráfico Técnico e Tabela */}
         <div className="col-span-12 xl:col-span-8 flex flex-col gap-6">
           <div className="bg-[#1a1c1a] rounded-xl overflow-hidden flex flex-col h-[500px] border border-[#434843]/10">
             <div className="flex justify-between items-center px-6 py-4 bg-[#1e201e] border-b border-[#434843]/10">
@@ -335,7 +340,7 @@ export default function Analysis() {
                   onClick={() => setViewMode('technical')}
                   className={`text-xs font-bold transition-all ${viewMode === 'technical' ? 'text-[#a1d494] border-b border-[#a1d494] pb-1' : 'text-[#c3c8c1] opacity-50 hover:opacity-100'}`}
                 >
-                  Vista Tecnica
+                  Vista Técnica
                 </button>
                 <button 
                   onClick={() => setViewMode('seasonality')}
@@ -348,6 +353,7 @@ export default function Analysis() {
                   className={`text-xs font-bold transition-all ${viewMode === 'cot' ? 'text-[#a1d494] border-b border-[#a1d494] pb-1' : 'text-[#c3c8c1] opacity-50 hover:opacity-100'}`}
                 >
                   Compromisso dos Traders
+                  <span className="ml-2 text-[9px] uppercase text-[#c3c8c1]">Demo</span>
                 </button>
               </div>
               <div className="flex gap-2 items-center">
@@ -384,6 +390,9 @@ export default function Analysis() {
               </div>
             </div>
             <div className="flex-1 relative bg-[#0d0f0d] p-6">
+              <div className="absolute top-4 right-4 z-10 bg-[#3a2800] text-[#e9c176] text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest">
+                Gráfico demonstrativo
+              </div>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={visibleData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
@@ -435,7 +444,7 @@ export default function Analysis() {
               {zoom > 1 && (
                 <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-[#1e201e]/80 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-[#a1d494] flex items-center gap-2 border border-[#a1d494]/20">
                   <MoveHorizontal size={12} />
-                  MODO PANORAMICO ATIVO
+                  MODO PANORÂMICO ATIVO
                 </div>
               )}
             </div>
@@ -444,25 +453,25 @@ export default function Analysis() {
           <div className="bg-[#1e201e] p-6 rounded-xl border border-[#434843]/10">
             <h3 className="text-lg font-bold font-headline mb-6 flex items-center gap-2 text-[#e2e3df]">
               <Database size={20} className="text-[#a1d494]" />
-              Projecoes Fundamentais (WASDE)
+              Projeções Fundamentais (WASDE)
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-widest text-[#c3c8c1] font-bold border-b border-[#434843]/10">
-                    <th className="pb-4 px-2">Metrica</th>
+                    <th className="pb-4 px-2">Métrica</th>
                     <th className="pb-4 px-2">Final 2022/23</th>
                     <th className="pb-4 px-2">Proj. 2023/24</th>
-                    <th className="pb-4 px-2 text-[#a1d494]">Previsao 24/25</th>
+                    <th className="pb-4 px-2 text-[#a1d494]">Previsão 24/25</th>
                     <th className="pb-4 px-2">Var. YoY</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm font-medium tabular-nums text-[#e2e3df]">
                   {[
-                    { m: 'Producao Total (MT)', f: '374,4M', p: '398,9M', fc: '410,2M', y: '+2,8%' },
+                    { m: 'Produção Total (MT)', f: '374,4M', p: '398,9M', fc: '410,2M', y: '+2,8%' },
                     { m: 'Estoques Finais', f: '101,9M', p: '114,6M', fc: '116,0M', y: '+1,2%' },
                     { m: 'Relacao Estoque/Uso', f: '27,2%', p: '28,7%', fc: '29,1%', y: '+0,4%' },
-                    { m: 'Previsao de Exportacao (MT)', f: '171,1M', p: '172,9M', fc: '178,5M', y: '+3,2%' }
+                    { m: 'Previsão de Exportação (MT)', f: '171,1M', p: '172,9M', fc: '178,5M', y: '+3,2%' }
                   ].map((row) => (
                     <tr key={row.m} className="hover:bg-[#333533] transition-colors border-b border-[#434843]/5">
                       <td className="py-4 px-2 font-headline font-semibold">{row.m}</td>
@@ -483,7 +492,7 @@ export default function Analysis() {
             <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
               <h3 className="text-lg font-bold font-headline flex items-center gap-2 text-[#e2e3df]">
                 <Activity size={20} className="text-[#a1d494]" />
-                Analises por Macro Grupo
+                Análises por Macro Grupo
               </h3>
               <div className="flex flex-wrap gap-3">
                 <div>
@@ -534,7 +543,7 @@ export default function Analysis() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {macroAnalysis.cards.length === 0 ? (
-                    <p className="text-sm text-[#c3c8c1]">Nenhuma analise encontrada para este macro grupo.</p>
+                  <p className="text-sm text-[#c3c8c1]">Nenhuma análise encontrada para este macro grupo.</p>
                   ) : (
                     macroAnalysis.cards.map((card) => (
                       <button
@@ -584,12 +593,12 @@ export default function Analysis() {
             )}
           </div>
 
-          {/* Metricas diretas da tabela agro_metrics_analysis */}
+          {/* Métricas diretas da tabela agro_metrics_analysis */}
           <div className="bg-[#1e201e] p-6 rounded-xl border border-[#434843]/10">
             <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
               <h3 className="text-lg font-bold font-headline flex items-center gap-2 text-[#e2e3df]">
                 <Activity size={20} className="text-[#e9c176]" />
-                Metricas Quantitativas (Supabase)
+                Métricas Quantitativas (Supabase)
               </h3>
               <div className="flex flex-wrap gap-3">
                 <div>
@@ -710,7 +719,7 @@ export default function Analysis() {
 
           <div className="relative h-48 rounded-xl overflow-hidden group border border-[#434843]/10">
             <img 
-              src="https://picsum.photos/seed/soy-field/400/300" 
+              src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80" 
               alt="Campo de soja" 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
@@ -718,7 +727,7 @@ export default function Analysis() {
             <div className="absolute inset-0 bg-[#1e201e]/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
               <Lock className="text-[#e9c176] text-4xl mb-2" size={32} />
               <h4 className="text-sm font-bold text-[#e2e3df] mb-2">Relatorios de Inteligencia Profunda</h4>
-              <p className="text-[10px] text-[#c3c8c1] mb-4 max-w-[200px]">Desbloqueie a modelagem preditiva de impacto climatico para a safra 2024.</p>
+              <p className="text-[10px] text-[#c3c8c1] mb-4 max-w-[200px]">Desbloqueie a modelagem preditiva de impacto climático para a safra atual.</p>
               <button className="bg-gradient-to-r from-[#a1d494] to-[#043405] text-[#e2e3df] px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-transform">
                 Upgrade para Harvest+
               </button>
@@ -728,7 +737,17 @@ export default function Analysis() {
       </div>
 
       {/* Botao de Acao Flutuante */}
-      <button className="fixed bottom-8 right-8 w-14 h-14 bg-[#a1d494] text-[#0a3909] rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-[60] border-4 border-[#1e201e]">
+      {actionNotice && (
+        <div className="fixed bottom-24 right-8 bg-[#1e201e] border border-[#a1d494]/40 text-[#e2e3df] px-4 py-3 rounded-lg shadow-2xl z-[70] text-xs font-bold">
+          {actionNotice}
+        </div>
+      )}
+
+      <button
+        onClick={() => notifyAction('Checkout Harvest+ será conectado na próxima etapa.')}
+        className="fixed bottom-8 right-8 w-14 h-14 bg-[#a1d494] text-[#0a3909] rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-[60] border-4 border-[#1e201e]"
+        aria-label="Assinar Harvest+"
+      >
         <ShoppingCart size={24} />
       </button>
     </motion.div>

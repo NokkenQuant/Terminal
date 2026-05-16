@@ -35,6 +35,7 @@ export default function MarketData() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [chartStartDate, setChartStartDate] = useState('');
+  const [actionNotice, setActionNotice] = useState('');
   const historyCache = useRef<Record<string, HistoricalPoint[]>>({});
   const chartStartInputRef = useRef<HTMLInputElement | null>(null);
   const assetOptions = Array.from(new Set(data.map((d) => d.asset))).sort();
@@ -76,7 +77,7 @@ export default function MarketData() {
   }, [period]);
 
   const downloadCSV = () => {
-    const headers = ["Nome", "Ticker", "Mercado", "Preco", "Variacao", "% Variacao"];
+    const headers = ["Nome", "Ticker", "Mercado", "Preço", "Variação", "% Variação"];
     const rows = data.map(c => [c.name, c.ticker, c.market, c.price, c.change, c.changePercent]);
     
     const csvContent = [
@@ -156,6 +157,11 @@ export default function MarketData() {
     document.body.removeChild(link);
   };
 
+  const notifyAction = (message: string) => {
+    setActionNotice(message);
+    window.setTimeout(() => setActionNotice(''), 2500);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
@@ -200,10 +206,14 @@ export default function MarketData() {
             </datalist>
           </div>
           <div className="relative">
-            <select className="w-full bg-[#0d0f0d] border-none rounded-lg py-2.5 px-4 text-sm text-[#e2e3df] focus:ring-1 focus:ring-[#e9c349] appearance-none">
-              <option>Todas as Regioes</option>
-              <option>America do Norte</option>
-              <option>America do Sul (BRA/ARG)</option>
+            <select
+              disabled
+              title="Filtro regional em breve"
+              className="w-full bg-[#0d0f0d] border-none rounded-lg py-2.5 px-4 text-sm text-[#c3c8c1] focus:ring-1 focus:ring-[#e9c349] appearance-none opacity-60 cursor-not-allowed"
+            >
+              <option>Todas as Regiões - em breve</option>
+              <option>América do Norte</option>
+              <option>América do Sul (BRA/ARG)</option>
               <option>Mar Negro / UE</option>
             </select>
           </div>
@@ -232,10 +242,10 @@ export default function MarketData() {
               <tr className="bg-[#1a1c1a]">
                 <th className="px-6 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1]">Ativo / Ticker</th>
                 <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1]">Mercado</th>
-                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Preco Atual</th>
-                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Variacao</th>
-                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">% Variacao</th>
-                <th className="px-6 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Acoes</th>
+                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Preço Atual</th>
+                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Variação</th>
+                <th className="px-4 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">% Variação</th>
+                <th className="px-6 py-4 font-headline text-[10px] uppercase tracking-widest text-[#c3c8c1] text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1a1c1a]/30 font-body text-sm text-[#e2e3df]">
@@ -263,7 +273,7 @@ export default function MarketData() {
                       <div className={`w-2 h-8 rounded-full ${c.change > 0 ? 'bg-[#a1d494]' : 'bg-[#ffb4ab]'}`}></div>
                       <div>
                         <div className="font-bold">{c.name}</div>
-                        <div className="text-[10px] text-[#c3c8c1] uppercase">{c.asset} ? {c.ticker}</div>
+                        <div className="text-[10px] text-[#c3c8c1] uppercase">{c.asset} / {c.ticker}</div>
                       </div>
                     </div>
                   </td>
@@ -287,8 +297,8 @@ export default function MarketData() {
                           fetchHistoricalData(c.asset);
                         }}
                         className="p-1.5 rounded-md text-[#a1d494] bg-[#111311] border border-[#434843]/30 hover:border-[#a1d494]/60"
-                        title="Baixar historico"
-                        aria-label="Baixar historico"
+                        title="Baixar histórico"
+                        aria-label="Baixar histórico"
                       >
                         <ArrowDownToLine size={14} />
                       </button>
@@ -296,7 +306,10 @@ export default function MarketData() {
                         className="p-1.5 rounded-md text-[#c3c8c1] bg-[#111311] border border-[#434843]/30 hover:border-[#e9c349]/60"
                         title="Criar alerta"
                         aria-label="Criar alerta"
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          notifyAction(`Alerta para ${c.name} será configurado em breve.`);
+                        }}
                       >
                         <Bell size={14} />
                       </button>
@@ -304,7 +317,10 @@ export default function MarketData() {
                         className="p-1.5 rounded-md text-[#c3c8c1] bg-[#111311] border border-[#434843]/30 hover:border-[#e9c349]/60"
                         title="Favoritar ativo"
                         aria-label="Favoritar ativo"
-                        onClick={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          notifyAction(`${c.name} marcado como favorito nesta sessão.`);
+                        }}
                       >
                         <Star size={14} />
                       </button>
@@ -322,7 +338,7 @@ export default function MarketData() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-headline font-bold text-[#e2e3df]">
-                Grafico de Cotas: {selectedAsset.name} ({selectedAsset.asset})
+                Gráfico de Cotações: {selectedAsset.name} ({selectedAsset.asset})
               </h2>
               <p className="text-xs text-[#c3c8c1]">Clique em outro ativo na tabela para trocar o grafico.</p>
               <input
@@ -334,7 +350,7 @@ export default function MarketData() {
               />
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-widest text-[#c3c8c1]">Variacao Diaria</div>
+              <div className="text-[10px] uppercase tracking-widest text-[#c3c8c1]">Variação Diária</div>
               <div className={`text-base font-bold tabular-nums ${selectedAsset.change >= 0 ? 'text-[#a1d494]' : 'text-[#ffb4ab]'}`}>
                 {selectedAsset.change >= 0 ? '+' : ''}{selectedAsset.change.toFixed(2)} ({selectedAsset.changePercent >= 0 ? '+' : ''}{selectedAsset.changePercent.toFixed(2)}%)
               </div>
@@ -357,11 +373,11 @@ export default function MarketData() {
             {loadingHistory ? (
               <div className="h-full flex items-center justify-center text-[#c3c8c1] text-sm">
                 <RefreshCw className="animate-spin mr-2" size={16} />
-                Carregando serie historica...
+                Carregando série histórica...
               </div>
             ) : chartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-[#c3c8c1] text-sm">
-                Sem historico disponivel para o ativo selecionado.
+                Sem histórico disponível para o ativo selecionado.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -425,7 +441,7 @@ export default function MarketData() {
             </div>
           </div>
           <div className="mt-8 h-32 bg-[#0d0f0d] rounded-xl flex items-center justify-center border border-[#434843]/10">
-            <p className="text-[#c3c8c1] italic text-xs">Carregando Visualizacao de Spread Logistico Dinamico...</p>
+            <p className="text-[#c3c8c1] italic text-xs">Carregando visualização de spread logístico dinâmico...</p>
           </div>
         </div>
 
@@ -468,7 +484,7 @@ export default function MarketData() {
             <div className="p-6 border-b border-[#434843]/10 flex justify-between items-center bg-[#1a1c1a]">
               <div>
                 <h2 className="text-xl font-headline font-bold text-[#e2e3df]">Historico: {selectedAsset.name} ({selectedAsset.asset})</h2>
-                <p className="text-xs text-[#c3c8c1]">Consulte dados histricos e exporte para analise.</p>
+                <p className="text-xs text-[#c3c8c1]">Consulte dados históricos e exporte para análise.</p>
               </div>
               <button onClick={() => setShowHistoryModal(false)} className="p-2 hover:bg-[#333533] rounded-full text-[#c3c8c1]">
                 <X size={20} />
@@ -505,7 +521,7 @@ export default function MarketData() {
                 disabled={historicalData.length === 0}
                 className="bg-[#a1d494] text-[#0a3909] px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 disabled:opacity-50"
               >
-                <FileDown size={14} /> Baixar historico CSV
+                <FileDown size={14} /> Baixar histórico CSV
               </button>
             </div>
 
@@ -526,7 +542,7 @@ export default function MarketData() {
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center text-[#c3c8c1]">
                         <RefreshCw className="animate-spin mx-auto mb-2" size={24} />
-                        Buscando histrico...
+                        Buscando histórico...
                       </td>
                     </tr>
                   ) : historicalData.length === 0 ? (
@@ -549,6 +565,11 @@ export default function MarketData() {
               </table>
             </div>
           </motion.div>
+        </div>
+      )}
+      {actionNotice && (
+        <div className="fixed bottom-24 right-8 bg-[#1e201e] border border-[#a1d494]/40 text-[#e2e3df] px-4 py-3 rounded-lg shadow-2xl z-50 text-xs font-bold">
+          {actionNotice}
         </div>
       )}
     </motion.div>
