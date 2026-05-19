@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Search, Filter, FileDown, Bell, Star, Ship, Info, RefreshCw, ArrowDownToLine, X } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import { addPriceAlert, addWatchlistAsset, AlertDirection, AuthSession, getPriceAlerts, getWatchlistAssets, PriceAlert, removeWatchlistAsset } from '../auth';
 
 interface CommodityData {
   name: string;
@@ -22,7 +23,11 @@ interface HistoricalPoint {
   volume?: number | null;
 }
 
-export default function MarketData() {
+type MarketDataProps = {
+  session: AuthSession | null;
+};
+
+export default function MarketData({ session }: MarketDataProps) {
   const [data, setData] = useState<CommodityData[]>([]);
   const [searchAsset, setSearchAsset] = useState('');
   const [loading, setLoading] = useState(true);
@@ -36,6 +41,13 @@ export default function MarketData() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [chartStartDate, setChartStartDate] = useState('');
   const [actionNotice, setActionNotice] = useState('');
+  const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [quickAssetInput, setQuickAssetInput] = useState('');
+  const [alertAssetInput, setAlertAssetInput] = useState('');
+  const [alertTargetPriceInput, setAlertTargetPriceInput] = useState('');
+  const [alertExpiryInput, setAlertExpiryInput] = useState('');
+  const [alertDirection, setAlertDirection] = useState<AlertDirection>('above');
   const historyCache = useRef<Record<string, HistoricalPoint[]>>({});
   const chartStartInputRef = useRef<HTMLInputElement | null>(null);
   const assetOptions = Array.from(new Set(data.map((d) => d.asset))).sort();
@@ -75,6 +87,16 @@ export default function MarketData() {
   useEffect(() => {
     fetchData(period);
   }, [period]);
+
+  useEffect(() => {
+    if (!session) {
+      setWatchlist([]);
+      setAlerts([]);
+      return;
+    }
+    setWatchlist(getWatchlistAssets(session.username));
+    setAlerts(getPriceAlerts(session.username));
+  }, [session]);
 
   const downloadCSV = () => {
     const headers = ["Nome", "Ticker", "Mercado", "Preço", "Variação", "% Variação"];
@@ -162,6 +184,27 @@ export default function MarketData() {
     window.setTimeout(() => setActionNotice(''), 2500);
   };
 
+  const createAlert = (asset: string) => {
+    if (!session) {
+      notifyAction('Entre com conta free para criar alerta.');
+      return;
+    }
+    const targetPrice = Number(alertTargetPriceInput);
+    try {
+      addPriceAlert(session.username, {
+        asset: asset.toUpperCase(),
+        targetPrice,
+        expiresAt: alertExpiryInput,
+        direction: alertDirection,
+        createdAt: new Date().toISOString(),
+      });
+      setAlerts(getPriceAlerts(session.username));
+      notifyAction(`Alerta criado para ${asset.toUpperCase()}.`);
+    } catch (error) {
+      notifyAction(error instanceof Error ? error.message : 'Erro ao criar alerta.');
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
@@ -232,6 +275,100 @@ export default function MarketData() {
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="bg-[#1e201e] rounded-2xl border border-[#434843]/10 p-4">
+        <h2 className="text-sm font-bold text-[#e2e3df] mb-2">Conta free: lista de acompanhamento e alertas</h2>
+        {!session ? (
+          <p className="text-xs text-[#c3c8c1]">Entre com conta free no icone de usuario para salvar watchlist e alertas.</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <input
+                type="text"
+                value={quickAssetInput}
+                onChange={(e) => setQuickAssetInput(e.target.value)}
+                placeholder="Digite um asset (ex: SOJA_EUA)"
+                className="bg-[#0d0f0d] border border-[#434843]/20 rounded px-3 py-2 text-xs text-[#e2e3df] min-w-[240px]"
+              />
+              <button
+                onClick={() => {
+                  const value = quickAssetInput.trim();
+                  if (!value) return;
+                  addWatchlistAsset(session.username, value.toUpperCase());
+                  setWatchlist(getWatchlistAssets(session.username));
+                  setQuickAssetInput('');
+                  notifyAction('Ativo adicionado na watchlist.');
+                }}
+                className="bg-[#333533] hover:bg-[#383a37] text-[#e2e3df] px-3 py-2 rounded text-xs font-bold"
+              >
+                Salvar watchlist
+              </button>
+              <button
+                onClick={() => {
+                  const value = (alertAssetInput || quickAssetInput).trim();
+                  if (!value) {
+                    notifyAction('Informe o ativo do alerta.');
+                    return;
+                  }
+                  createAlert(value);
+                }}
+                className="bg-[#a1d494] text-[#0a3909] px-3 py-2 rounded text-xs font-bold"
+              >
+                Criar alerta
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+              <input
+                type="text"
+                value={alertAssetInput}
+                onChange={(e) => setAlertAssetInput(e.target.value)}
+                placeholder="Ativo do alerta"
+                className="bg-[#0d0f0d] border border-[#434843]/20 rounded px-3 py-2 text-xs text-[#e2e3df]"
+              />
+              <input
+                type="number"
+                min="0.0001"
+                step="0.0001"
+                value={alertTargetPriceInput}
+                onChange={(e) => setAlertTargetPriceInput(e.target.value)}
+                placeholder="Preco alvo"
+                className="bg-[#0d0f0d] border border-[#434843]/20 rounded px-3 py-2 text-xs text-[#e2e3df]"
+              />
+              <input
+                type="date"
+                value={alertExpiryInput}
+                onChange={(e) => setAlertExpiryInput(e.target.value)}
+                className="bg-[#0d0f0d] border border-[#434843]/20 rounded px-3 py-2 text-xs text-[#e2e3df]"
+              />
+              <select
+                value={alertDirection}
+                onChange={(e) => setAlertDirection(e.target.value as AlertDirection)}
+                className="bg-[#0d0f0d] border border-[#434843]/20 rounded px-3 py-2 text-xs text-[#e2e3df]"
+              >
+                <option value="above">Disparar quando subir acima</option>
+                <option value="below">Disparar quando cair abaixo</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-[#121412] border border-[#434843]/20 rounded-lg p-3">
+                <p className="text-[11px] font-bold text-[#c3c8c1] mb-2">Watchlist</p>
+                <p className="text-xs text-[#e2e3df]">{watchlist.length ? watchlist.join(', ') : 'Sem ativos salvos.'}</p>
+              </div>
+              <div className="bg-[#121412] border border-[#434843]/20 rounded-lg p-3">
+                <p className="text-[11px] font-bold text-[#c3c8c1] mb-2">Alertas recentes</p>
+                <p className="text-xs text-[#e2e3df]">
+                  {alerts.length
+                    ? alerts
+                        .slice(0, 3)
+                        .map((a) => `${a.asset} alvo ${Number(a.targetPrice).toLocaleString('pt-BR')} ate ${new Date(a.expiresAt).toLocaleDateString('pt-BR')}`)
+                        .join(', ')
+                    : 'Sem alertas salvos.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Grade de Dados */}
@@ -308,7 +445,16 @@ export default function MarketData() {
                         aria-label="Criar alerta"
                         onClick={(event) => {
                           event.stopPropagation();
-                          notifyAction(`Alerta para ${c.name} será configurado em breve.`);
+                          if (!session) {
+                            notifyAction('Entre com conta free para criar alerta.');
+                            return;
+                          }
+                          if (!alertTargetPriceInput || !alertExpiryInput) {
+                            notifyAction('Defina preco alvo e data limite no painel de alertas.');
+                            setAlertAssetInput(c.asset);
+                            return;
+                          }
+                          createAlert(c.asset);
                         }}
                       >
                         <Bell size={14} />
@@ -319,10 +465,22 @@ export default function MarketData() {
                         aria-label="Favoritar ativo"
                         onClick={(event) => {
                           event.stopPropagation();
-                          notifyAction(`${c.name} marcado como favorito nesta sessão.`);
+                          if (!session) {
+                            notifyAction('Entre com conta free para usar favoritos.');
+                            return;
+                          }
+                          const isFav = watchlist.includes(c.asset);
+                          if (isFav) {
+                            removeWatchlistAsset(session.username, c.asset);
+                            notifyAction(`${c.name} removido do portfolio.`);
+                          } else {
+                            addWatchlistAsset(session.username, c.asset);
+                            notifyAction(`${c.name} adicionado ao portfolio.`);
+                          }
+                          setWatchlist(getWatchlistAssets(session.username));
                         }}
                       >
-                        <Star size={14} />
+                        <Star size={14} className={watchlist.includes(c.asset) ? 'fill-current text-[#e9c176]' : ''} />
                       </button>
                     </div>
                   </td>

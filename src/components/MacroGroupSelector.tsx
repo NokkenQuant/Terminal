@@ -17,7 +17,8 @@ export default function MacroGroupSelector({
   label = 'Macro grupo',
   className = '',
 }: Props) {
-  const options = includeAll ? [ALL_MACRO_GROUPS, ...MACRO_GROUP_OPTIONS] : [...MACRO_GROUP_OPTIONS];
+  const sortedGroups = [...MACRO_GROUP_OPTIONS].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const options = includeAll ? [ALL_MACRO_GROUPS, ...sortedGroups] : sortedGroups;
 
   return (
     <div className={className}>

@@ -1,27 +1,30 @@
-﻿import React from 'react';
-import { LayoutDashboard, BarChart3, BrainCircuit, Crown, Package, Settings, HelpCircle, Stars } from 'lucide-react';
-import { View } from '../types';
+import React from "react";
+import { LayoutDashboard, BarChart3, BrainCircuit, Crown, User, Settings, HelpCircle, Stars } from "lucide-react";
+import { View } from "../types";
+import { AuthSession } from "../auth";
 
 interface SidebarProps {
   currentView: View;
   onViewChange: (view: View) => void;
+  session: AuthSession | null;
 }
 
-export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
+export default function Sidebar({ currentView, onViewChange, session }: SidebarProps) {
+  const isAnalysisLocked = !session || session.plan !== "premium";
   const menuItems = [
-    { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
-    { id: 'market-data', label: 'Dados de Mercado', icon: BarChart3 },
-    { id: 'physical-market', label: 'Mercado Físico', icon: BarChart3 },
-    { id: 'analysis', label: 'Análise de Ativos', icon: BrainCircuit },
-    { id: 'premium', label: 'Premium', icon: Crown, color: 'text-[#e9c176]' },
-    { id: 'portfolio', label: 'Portfólio', icon: Package, disabled: true },
+    { id: "dashboard", label: "Painel", icon: LayoutDashboard },
+    { id: "market-data", label: "Dados de Mercado", icon: BarChart3 },
+    { id: "physical-market", label: "Mercado Fisico", icon: BarChart3 },
+    { id: "analysis", label: "Analise de Ativos", icon: BrainCircuit, locked: isAnalysisLocked },
+    { id: "premium", label: "Premium", icon: Crown },
+    { id: "portfolio", label: "Perfil", icon: User },
   ];
 
   return (
     <aside className="fixed left-0 top-0 flex flex-col h-full py-4 bg-[#1a1c1a] w-64 pt-16 z-40 hidden md:flex">
       <div className="px-6 mb-8">
         <h2 className="text-lg font-black text-[#e9c176] font-headline">Dados Agro</h2>
-        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">Inteligência Profunda do Solo</p>
+        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">Inteligencia Profunda do Solo</p>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -31,21 +34,20 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
           return (
             <div
               key={item.id}
-              onClick={() => !item.disabled && onViewChange(item.id as View)}
-              title={item.disabled ? 'Em breve' : item.label}
+              onClick={() => !item.disabled && !item.locked && onViewChange(item.id as View)}
+              title={item.disabled ? "Em breve" : item.locked ? "Disponivel apenas no plano premium" : item.label}
               className={`
                 flex items-center px-6 py-3 gap-3 transition-all
-                ${isActive 
-                  ? 'bg-[#1e201e] text-[#a1d494] rounded-r-full mr-4' 
-                  : item.disabled
-                    ? 'text-[#e2e3df] opacity-35 cursor-not-allowed'
-                    : 'text-[#e2e3df] opacity-60 hover:text-[#a1d494] hover:bg-[#292a28] cursor-pointer'
-                }
+                ${isActive ? "bg-[#1e201e] text-[#a1d494] rounded-r-full mr-4" : item.disabled || item.locked ? "text-[#e2e3df] opacity-35 cursor-not-allowed" : "text-[#e2e3df] opacity-60 hover:text-[#a1d494] hover:bg-[#292a28] cursor-pointer"}
               `}
             >
-              <Icon size={18} className={isActive ? 'fill-current' : ''} />
+              <Icon size={18} className={isActive ? "fill-current" : ""} />
               <span className="text-sm font-medium">{item.label}</span>
-              {item.disabled && <span className="ml-auto text-[9px] uppercase tracking-widest text-[#c3c8c1]">Em breve</span>}
+              {(item.disabled || item.locked) && (
+                <span className="ml-auto text-[9px] uppercase tracking-widest text-[#c3c8c1]">
+                  {item.locked ? "Premium" : "Em breve"}
+                </span>
+              )}
             </div>
           );
         })}
@@ -58,9 +60,9 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
               <Stars size={14} className="text-[#e9c176] fill-current" />
               <p className="text-xs font-bold text-[#e9c176]">Harvest+ Pronto</p>
             </div>
-            <p className="text-[10px] text-[#c3c8c1] mb-3">Desbloqueie mapas de liquidez CBOT em tempo real</p>
-            <button 
-              onClick={() => onViewChange('pricing')}
+            <p className="text-[10px] text-[#c3c8c1] mb-3">Desbloqueie Analise de Ativos premium</p>
+            <button
+              onClick={() => onViewChange("pricing")}
               className="bg-[#a1d494] text-[#0a3909] text-[11px] font-bold py-1.5 px-3 rounded-md w-full hover:brightness-110 transition-all"
             >
               Upgrade para Harvest+
@@ -71,7 +73,7 @@ export default function Sidebar({ currentView, onViewChange }: SidebarProps) {
         <div className="flex flex-col gap-1 border-t border-[#434843]/20 pt-4">
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <Settings size={14} />
-            <span className="text-xs">Configurações</span>
+            <span className="text-xs">Configuracoes</span>
           </div>
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <HelpCircle size={14} />

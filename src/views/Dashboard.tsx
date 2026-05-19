@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowUpRight, ArrowDownRight, Filter, Download, Lock, Sparkles, Info, Stars, Sun, Truck, Ship, RefreshCw, Share2, Bolt, Bell, Maximize2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { NEWS } from '../constants';
+import { AuthSession, getWatchlistAssets } from '../auth';
 
 interface MarketDataItem {
   name: string;
@@ -28,7 +29,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function Dashboard() {
+type DashboardProps = {
+  session: AuthSession | null;
+};
+
+export default function Dashboard({ session }: DashboardProps) {
   const [selectedSymbol, setSelectedSymbol] = useState('');
   const [marketData, setMarketData] = useState<MarketDataItem[]>([]);
   const [historicalData, setHistoricalData] = useState<any[]>([]);
@@ -36,6 +41,7 @@ export default function Dashboard() {
   const [timeRange, setTimeRange] = useState('30d');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [actionNotice, setActionNotice] = useState('');
+  const [watchlist, setWatchlist] = useState<string[]>([]);
 
   const fetchHistory = async (symbol: string, range: string) => {
     setLoading(true);
@@ -86,9 +92,32 @@ export default function Dashboard() {
     fetchMarketData();
   }, []);
 
+  useEffect(() => {
+    if (!session) {
+      setWatchlist([]);
+      return;
+    }
+    setWatchlist(getWatchlistAssets(session.username));
+  }, [session]);
+
+  const watchlistMarketData = useMemo(
+    () => marketData.filter((item) => watchlist.includes(item.asset)),
+    [marketData, watchlist]
+  );
+
+  useEffect(() => {
+    if (watchlistMarketData.length === 0) {
+      setSelectedSymbol('');
+      return;
+    }
+    if (!watchlistMarketData.some((item) => item.ticker === selectedSymbol)) {
+      setSelectedSymbol(watchlistMarketData[0].ticker);
+    }
+  }, [watchlistMarketData, selectedSymbol]);
+
   const selectedAssetInfo = useMemo(
-    () => marketData.find((c) => c.ticker === selectedSymbol) || marketData[0],
-    [marketData, selectedSymbol]
+    () => watchlistMarketData.find((c) => c.ticker === selectedSymbol) || watchlistMarketData[0],
+    [watchlistMarketData, selectedSymbol]
   );
 
   const notifyAction = (message: string) => {
@@ -102,9 +131,18 @@ export default function Dashboard() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      {watchlistMarketData.length === 0 ? (
+        <section className="bg-[#1e201e] rounded-2xl border border-[#434843]/10 p-10 text-center">
+          <h1 className="text-2xl font-headline font-extrabold text-[#e2e3df] mb-2">Painel vazio</h1>
+          <p className="text-sm text-[#c3c8c1]">
+            Favorite ativos na aba Dados de Mercado para montar seu portfolio de acompanhamento.
+          </p>
+        </section>
+      ) : (
+      <>
       {/* Linha de Ticker */}
       <div className="flex items-center gap-4 overflow-x-auto pb-2 whitespace-nowrap scrollbar-hide">
-        {marketData.map((c) => (
+        {watchlistMarketData.map((c) => (
           <div key={c.ticker} className="bg-[#1e201e] px-3 py-1.5 rounded flex items-center gap-3 border-l-2 border-[#a1d494]">
             <span className="text-[10px] font-bold text-[#c3c8c1]">{c.ticker}</span>
             <span className="tabular-nums font-semibold text-sm text-[#e2e3df]">{c.price.toLocaleString()}</span>
@@ -145,7 +183,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="text-sm tabular-nums divide-y divide-[#434843]/10 text-[#e2e3df]">
-                  {marketData.map((c) => (
+                  {watchlistMarketData.map((c) => (
                     <tr 
                       key={c.ticker} 
                       onClick={() => setSelectedSymbol(c.ticker)}
@@ -442,6 +480,8 @@ export default function Dashboard() {
           Nova Mesa de Análise
         </div>
       </button>
+      </>
+      )}
     </motion.div>
   );
 }

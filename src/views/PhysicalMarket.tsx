@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Download, RefreshCw } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
@@ -36,6 +36,15 @@ type PhysicalSeriesPoint = {
   currency?: string | null;
 };
 
+type PhysicalSubview = 'cepea' | 'conab' | 'internacional' | 'clima';
+
+const PHYSICAL_SUBVIEWS: Array<{ id: PhysicalSubview; label: string; description: string }> = [
+  { id: 'cepea', label: 'CEPEA', description: 'Dados ativos da base atual' },
+  { id: 'conab', label: 'CONAB', description: 'Estrutura pronta para integracao' },
+  { id: 'internacional', label: 'Internacional', description: 'Estrutura pronta para integracao' },
+  { id: 'clima', label: 'Clima', description: 'Estrutura pronta para integracao' },
+];
+
 function formatIsoDatePtBr(isoDate: string): string {
   if (!isoDate || !isoDate.includes('-')) return isoDate;
   const [year, month, day] = isoDate.slice(0, 10).split('-');
@@ -44,6 +53,7 @@ function formatIsoDatePtBr(isoDate: string): string {
 }
 
 export default function PhysicalMarket() {
+  const [activeSubview, setActiveSubview] = useState<PhysicalSubview>('cepea');
   const [rows, setRows] = useState<PhysicalRow[]>([]);
   const [selectedMacroGroup, setSelectedMacroGroup] = useSharedMacroGroup();
   const [selectedCommodities, setSelectedCommodities] = useState<string[]>([]);
@@ -99,7 +109,7 @@ export default function PhysicalMarket() {
 
   useEffect(() => {
     const loadHistory = async () => {
-      if (!selectedSerie) return;
+      if (!selectedSerie || activeSubview !== 'cepea') return;
       setLoadingHistory(true);
       try {
         const q = new URLSearchParams({
@@ -118,7 +128,7 @@ export default function PhysicalMarket() {
       }
     };
     loadHistory();
-  }, [selectedSerie?.commodity, selectedSerie?.variable, chartStartDate]);
+  }, [selectedSerie?.commodity, selectedSerie?.variable, chartStartDate, activeSubview]);
 
   const rowsByCommodity = useMemo(() => {
     const grouped = new Map<string, PhysicalRow[]>();
@@ -169,51 +179,93 @@ export default function PhysicalMarket() {
       className="space-y-6"
     >
       <section className="mb-4">
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {PHYSICAL_SUBVIEWS.map((subview) => {
+              const active = activeSubview === subview.id;
+              return (
+                <button
+                  key={subview.id}
+                  onClick={() => setActiveSubview(subview.id)}
+                  className={`px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                    active
+                      ? 'bg-[#a1d494]/20 border-[#a1d494] text-[#d7f2d0]'
+                      : 'bg-[#1a1c1a] border-[#434843]/25 text-[#c3c8c1] hover:bg-[#333533]'
+                  }`}
+                >
+                  {subview.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-[#9ea39d] mt-2">
+            {PHYSICAL_SUBVIEWS.find((item) => item.id === activeSubview)?.description}
+          </p>
+        </div>
+
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4">
           <div>
-            <h1 className="text-4xl font-headline font-extrabold text-[#e2e3df] tracking-tight mb-2">Mercado Físico CEPEA</h1>
+            <h1 className="text-4xl font-headline font-extrabold text-[#e2e3df] tracking-tight mb-2">
+              {activeSubview === 'cepea' ? 'Mercado Fisico CEPEA' : `Mercado Fisico ${PHYSICAL_SUBVIEWS.find((item) => item.id === activeSubview)?.label}`}
+            </h1>
             <p className="text-[#c3c8c1] text-sm">
-              Snapshot mais recente por commodity e variável.
-              {latestDate ? ` Data: ${new Date(latestDate).toLocaleDateString('pt-BR')}` : ''}
+              {activeSubview === 'cepea'
+                ? `Snapshot mais recente por commodity e variavel.${latestDate ? ` Data: ${new Date(latestDate).toLocaleDateString('pt-BR')}` : ''}`
+                : 'Subview preparada para implementacao de dados.'}
             </p>
           </div>
-          <button
-            onClick={fetchData}
-            className="bg-[#333533] hover:bg-[#383a37] text-[#e2e3df] px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Atualizar
-          </button>
+          {activeSubview === 'cepea' && (
+            <button
+              onClick={fetchData}
+              className="bg-[#333533] hover:bg-[#383a37] text-[#e2e3df] px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Atualizar
+            </button>
+          )}
         </div>
 
-        <div className="mb-3">
-          <MacroGroupSelector value={selectedMacroGroup} onChange={setSelectedMacroGroup} includeAll label="Macro grupo" />
-        </div>
+        {activeSubview === 'cepea' && (
+          <>
+            <div className="mb-3">
+              <MacroGroupSelector value={selectedMacroGroup} onChange={setSelectedMacroGroup} includeAll label="Macro grupo" />
+            </div>
 
-        <div className="flex flex-wrap gap-2">
-          {commodities.map((commodity) => {
-            const active = selectedCommodities.includes(commodity);
-            return (
-              <button
-                key={commodity}
-                onClick={() =>
-                  setSelectedCommodities((prev) =>
-                    prev.includes(commodity) ? prev.filter((c) => c !== commodity) : [...prev, commodity],
-                  )
-                }
-                className={`px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
-                  active
-                    ? 'bg-[#a1d494]/20 border-[#a1d494] text-[#d7f2d0]'
-                    : 'bg-[#1a1c1a] border-[#434843]/25 text-[#c3c8c1] hover:bg-[#333533]'
-                }`}
-              >
-                {commodity}
-              </button>
-            );
-          })}
-        </div>
+            <div className="flex flex-wrap gap-2">
+              {commodities.map((commodity) => {
+                const active = selectedCommodities.includes(commodity);
+                return (
+                  <button
+                    key={commodity}
+                    onClick={() =>
+                      setSelectedCommodities((prev) =>
+                        prev.includes(commodity) ? prev.filter((c) => c !== commodity) : [...prev, commodity],
+                      )
+                    }
+                    className={`px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
+                      active
+                        ? 'bg-[#a1d494]/20 border-[#a1d494] text-[#d7f2d0]'
+                        : 'bg-[#1a1c1a] border-[#434843]/25 text-[#c3c8c1] hover:bg-[#333533]'
+                    }`}
+                  >
+                    {commodity}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </section>
 
-      {loading ? (
+      {activeSubview !== 'cepea' ? (
+        <section className="bg-[#1e201e] rounded-2xl border border-[#434843]/10 p-8">
+          <h2 className="text-xl font-headline font-bold text-[#e2e3df] mb-2">
+            {PHYSICAL_SUBVIEWS.find((item) => item.id === activeSubview)?.label}
+          </h2>
+          <p className="text-sm text-[#c3c8c1]">
+            Esta subview ja esta criada na interface e pronta para receber fonte, ETL e visualizacoes.
+          </p>
+        </section>
+      ) : loading ? (
         <section className="bg-[#1e201e] rounded-2xl border border-[#434843]/10 p-8 text-center text-[#c3c8c1]">
           <RefreshCw className="animate-spin mx-auto mb-2" size={24} />
           Carregando painel fisico...
@@ -230,7 +282,7 @@ export default function PhysicalMarket() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#333533] text-[#e2e3df] hover:bg-[#3d403d]"
                 >
-                  <Download size={13} /> Download histórico
+                  <Download size={13} /> Download historico
                 </a>
               </div>
               {card.rows.length === 0 ? (
@@ -264,7 +316,7 @@ export default function PhysicalMarket() {
                           {row.currency || ''}
                         </div>
                         <div className="text-[11px] text-[#9ea39d]">
-                          Data referência: {new Date(row.data).toLocaleDateString('pt-BR')}
+                          Data referencia: {new Date(row.data).toLocaleDateString('pt-BR')}
                         </div>
                         <div className="text-[11px] text-[#9ea39d]">{row.unit || '-'}</div>
                       </button>
@@ -277,12 +329,12 @@ export default function PhysicalMarket() {
         </section>
       )}
 
-      {selectedSerie && (
+      {activeSubview === 'cepea' && selectedSerie && (
         <section className="bg-[#1e201e] rounded-2xl border border-[#434843]/10 p-5 md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
               <h2 className="text-lg font-headline font-bold text-[#e2e3df]">
-                Gráfico CEPEA: {selectedSerie.commodity}
+                Grafico CEPEA: {selectedSerie.commodity}
               </h2>
               <p className="text-xs text-[#c3c8c1]">{selectedSerie.variable}</p>
             </div>
@@ -303,11 +355,11 @@ export default function PhysicalMarket() {
             {loadingHistory ? (
               <div className="h-full flex items-center justify-center text-[#c3c8c1] text-sm">
                 <RefreshCw className="animate-spin mr-2" size={16} />
-                Carregando série histórica...
+                Carregando serie historica...
               </div>
             ) : chartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-[#c3c8c1] text-sm">
-                Sem histórico disponível.
+                Sem historico disponivel.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
