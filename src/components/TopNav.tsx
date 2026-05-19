@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Search, Bell, TrendingUp, User, LogOut } from "lucide-react";
 import { View } from "../types";
 import { AuthSession, RegisterInput } from "../auth";
+import { BR_STATES, BR_STATES_CITIES } from "../data/brLocations";
 
 interface TopNavProps {
   currentView: View;
@@ -20,13 +21,25 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [age, setAge] = useState("");
-  const [sex, setSex] = useState("");
+  const [sex, setSex] = useState<"Masculino" | "Feminino" | "">("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [country, setCountry] = useState("Brasil");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
+  const cities = state ? BR_STATES_CITIES[state] || [] : [];
+
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
 
   const submit = async () => {
     setLoading(true);
@@ -35,6 +48,10 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
       if (mode === "login") {
         await onLogin(username, password);
       } else {
+        if (!emailRegex.test(email.trim())) throw new Error("Email invalido.");
+        if (!phoneRegex.test(phone.trim())) throw new Error("Telefone invalido. Use formato (DD) 99999-9999.");
+        if (!sex) throw new Error("Selecione o sexo.");
+        if (!state || !city) throw new Error("Selecione estado e cidade.");
         await onRegister({
           username,
           password,
@@ -100,7 +117,7 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
           <div className="w-full max-w-xl rounded-2xl border border-[#434843]/25 bg-[#1e201e] p-5 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-headline font-bold text-[#e2e3df] mb-1">{mode === "login" ? "Entrar na conta" : "Criar conta free"}</h2>
             <div className="space-y-3">
-              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Usuario" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={mode === "login" ? "Email" : "Usuario"} className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Senha" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
               {mode === "register" && (
                 <>
@@ -108,10 +125,32 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <input type="number" min="13" value={age} onChange={(e) => setAge(e.target.value)} placeholder="Idade" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
-                    <input type="text" value={sex} onChange={(e) => setSex(e.target.value)} placeholder="Sexo" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
-                    <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefone" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
-                    <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Cidade" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
-                    <input type="text" value={state} onChange={(e) => setState(e.target.value)} placeholder="Estado" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
+                    <select value={sex} onChange={(e) => setSex(e.target.value as "Masculino" | "Feminino")} className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]">
+                      <option value="">Sexo</option>
+                      <option value="Masculino">Masculino</option>
+                      <option value="Feminino">Feminino</option>
+                    </select>
+                    <input type="text" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="Telefone (DD) 99999-9999" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
+                    <select
+                      value={state}
+                      onChange={(e) => {
+                        const nextState = e.target.value;
+                        setState(nextState);
+                        setCity("");
+                      }}
+                      className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]"
+                    >
+                      <option value="">Estado</option>
+                      {BR_STATES.map((uf) => (
+                        <option key={uf} value={uf}>{uf}</option>
+                      ))}
+                    </select>
+                    <select value={city} onChange={(e) => setCity(e.target.value)} className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" disabled={!state}>
+                      <option value="">Cidade</option>
+                      {cities.map((cityOption) => (
+                        <option key={cityOption} value={cityOption}>{cityOption}</option>
+                      ))}
+                    </select>
                     <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Pais" className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
                   </div>
                 </>

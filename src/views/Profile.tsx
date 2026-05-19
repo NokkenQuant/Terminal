@@ -1,15 +1,69 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { AuthSession, getPriceAlerts, getStoredUserByUsername, getWatchlistAssets } from "../auth";
+import { AuthSession, getPriceAlertsAsync, getWatchlistAssetsAsync, PriceAlert } from "../auth";
 
 type ProfileProps = {
   session: AuthSession | null;
 };
 
+type SupabaseProfile = {
+  full_name?: string;
+  email?: string;
+  age?: number;
+  sex?: string;
+  phone?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+};
+
 export default function Profile({ session }: ProfileProps) {
-  const user = useMemo(() => (session ? getStoredUserByUsername(session.username) : null), [session]);
-  const watchlist = useMemo(() => (session ? getWatchlistAssets(session.username) : []), [session]);
-  const alerts = useMemo(() => (session ? getPriceAlerts(session.username) : []), [session]);
+  const [profile, setProfile] = useState<SupabaseProfile | null>(null);
+  const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!session?.token) {
+        setProfile(null);
+        return;
+      }
+      try {
+        const resp = await fetch("/api/auth/profile", {
+          headers: { Authorization: `Bearer ${session.token}` },
+        });
+        if (!resp.ok) {
+          setProfile(null);
+          return;
+        }
+        const payload = await resp.json();
+        setProfile(payload?.profile || null);
+      } catch {
+        setProfile(null);
+      }
+    };
+    loadProfile();
+  }, [session?.token]);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!session) {
+        setWatchlist([]);
+        setAlerts([]);
+        return;
+      }
+      try {
+        const [watchlistData, alertsData] = await Promise.all([getWatchlistAssetsAsync(), getPriceAlertsAsync()]);
+        setWatchlist(watchlistData);
+        setAlerts(alertsData);
+      } catch (error) {
+        console.error(error);
+        setWatchlist([]);
+        setAlerts([]);
+      }
+    };
+    load();
+  }, [session]);
 
   if (!session) {
     return (
@@ -30,7 +84,7 @@ export default function Profile({ session }: ProfileProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           <div className="bg-[#121412] rounded-lg p-3 border border-[#434843]/20">
             <p className="text-[#9ea39d] text-xs">Nome</p>
-            <p className="text-[#e2e3df] font-bold">{user?.fullName || session.username}</p>
+            <p className="text-[#e2e3df] font-bold">{profile?.full_name || session.username}</p>
           </div>
           <div className="bg-[#121412] rounded-lg p-3 border border-[#434843]/20">
             <p className="text-[#9ea39d] text-xs">Usuario</p>
@@ -38,7 +92,7 @@ export default function Profile({ session }: ProfileProps) {
           </div>
           <div className="bg-[#121412] rounded-lg p-3 border border-[#434843]/20">
             <p className="text-[#9ea39d] text-xs">Email</p>
-            <p className="text-[#e2e3df] font-bold">{user?.email || "-"}</p>
+            <p className="text-[#e2e3df] font-bold">{profile?.email || "-"}</p>
           </div>
           <div className="bg-[#121412] rounded-lg p-3 border border-[#434843]/20">
             <p className="text-[#9ea39d] text-xs">Tipo de conta</p>
@@ -46,19 +100,19 @@ export default function Profile({ session }: ProfileProps) {
           </div>
           <div className="bg-[#121412] rounded-lg p-3 border border-[#434843]/20">
             <p className="text-[#9ea39d] text-xs">Idade</p>
-            <p className="text-[#e2e3df] font-bold">{user?.age ?? "-"}</p>
+            <p className="text-[#e2e3df] font-bold">{profile?.age ?? "-"}</p>
           </div>
           <div className="bg-[#121412] rounded-lg p-3 border border-[#434843]/20">
             <p className="text-[#9ea39d] text-xs">Sexo</p>
-            <p className="text-[#e2e3df] font-bold">{user?.sex || "-"}</p>
+            <p className="text-[#e2e3df] font-bold">{profile?.sex || "-"}</p>
           </div>
           <div className="bg-[#121412] rounded-lg p-3 border border-[#434843]/20">
             <p className="text-[#9ea39d] text-xs">Telefone</p>
-            <p className="text-[#e2e3df] font-bold">{user?.phone || "-"}</p>
+            <p className="text-[#e2e3df] font-bold">{profile?.phone || "-"}</p>
           </div>
           <div className="bg-[#121412] rounded-lg p-3 border border-[#434843]/20">
             <p className="text-[#9ea39d] text-xs">Cidade / Estado</p>
-            <p className="text-[#e2e3df] font-bold">{[user?.city, user?.state].filter(Boolean).join(" / ") || "-"}</p>
+            <p className="text-[#e2e3df] font-bold">{[profile?.city, profile?.state].filter(Boolean).join(" / ") || "-"}</p>
           </div>
         </div>
       </section>

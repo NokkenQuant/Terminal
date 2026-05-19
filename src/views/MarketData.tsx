@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Search, Filter, FileDown, Bell, Star, Ship, Info, RefreshCw, ArrowDownToLine, X } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import { addPriceAlert, addWatchlistAsset, AlertDirection, AuthSession, getPriceAlerts, getWatchlistAssets, PriceAlert, removeWatchlistAsset } from '../auth';
+import { addPriceAlertAsync, addWatchlistAssetAsync, AlertDirection, AuthSession, getPriceAlertsAsync, getWatchlistAssetsAsync, PriceAlert, removeWatchlistAssetAsync } from '../auth';
 
 interface CommodityData {
   name: string;
@@ -89,13 +89,23 @@ export default function MarketData({ session }: MarketDataProps) {
   }, [period]);
 
   useEffect(() => {
-    if (!session) {
-      setWatchlist([]);
-      setAlerts([]);
-      return;
-    }
-    setWatchlist(getWatchlistAssets(session.username));
-    setAlerts(getPriceAlerts(session.username));
+    const load = async () => {
+      if (!session) {
+        setWatchlist([]);
+        setAlerts([]);
+        return;
+      }
+      try {
+        const [assets, alertsData] = await Promise.all([getWatchlistAssetsAsync(), getPriceAlertsAsync()]);
+        setWatchlist(assets);
+        setAlerts(alertsData);
+      } catch (error) {
+        console.error(error);
+        setWatchlist([]);
+        setAlerts([]);
+      }
+    };
+    load();
   }, [session]);
 
   const downloadCSV = () => {
@@ -184,21 +194,21 @@ export default function MarketData({ session }: MarketDataProps) {
     window.setTimeout(() => setActionNotice(''), 2500);
   };
 
-  const createAlert = (asset: string) => {
+  const createAlert = async (asset: string) => {
     if (!session) {
       notifyAction('Entre com conta free para criar alerta.');
       return;
     }
     const targetPrice = Number(alertTargetPriceInput);
     try {
-      addPriceAlert(session.username, {
+      await addPriceAlertAsync({
         asset: asset.toUpperCase(),
         targetPrice,
         expiresAt: alertExpiryInput,
         direction: alertDirection,
         createdAt: new Date().toISOString(),
       });
-      setAlerts(getPriceAlerts(session.username));
+      setAlerts(await getPriceAlertsAsync());
       notifyAction(`Alerta criado para ${asset.toUpperCase()}.`);
     } catch (error) {
       notifyAction(error instanceof Error ? error.message : 'Erro ao criar alerta.');
@@ -292,11 +302,11 @@ export default function MarketData({ session }: MarketDataProps) {
                 className="bg-[#0d0f0d] border border-[#434843]/20 rounded px-3 py-2 text-xs text-[#e2e3df] min-w-[240px]"
               />
               <button
-                onClick={() => {
+                onClick={async () => {
                   const value = quickAssetInput.trim();
                   if (!value) return;
-                  addWatchlistAsset(session.username, value.toUpperCase());
-                  setWatchlist(getWatchlistAssets(session.username));
+                  await addWatchlistAssetAsync(value.toUpperCase());
+                  setWatchlist(await getWatchlistAssetsAsync());
                   setQuickAssetInput('');
                   notifyAction('Ativo adicionado na watchlist.');
                 }}
@@ -305,13 +315,13 @@ export default function MarketData({ session }: MarketDataProps) {
                 Salvar watchlist
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const value = (alertAssetInput || quickAssetInput).trim();
                   if (!value) {
                     notifyAction('Informe o ativo do alerta.');
                     return;
                   }
-                  createAlert(value);
+                  await createAlert(value);
                 }}
                 className="bg-[#a1d494] text-[#0a3909] px-3 py-2 rounded text-xs font-bold"
               >
@@ -427,7 +437,7 @@ export default function MarketData({ session }: MarketDataProps) {
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-100">
                       <button 
-                        onClick={(event) => {
+                        onClick={async (event) => {
                           event.stopPropagation();
                           setSelectedAsset(c);
                           setShowHistoryModal(true);
@@ -454,7 +464,7 @@ export default function MarketData({ session }: MarketDataProps) {
                             setAlertAssetInput(c.asset);
                             return;
                           }
-                          createAlert(c.asset);
+                          await createAlert(c.asset);
                         }}
                       >
                         <Bell size={14} />
@@ -463,7 +473,7 @@ export default function MarketData({ session }: MarketDataProps) {
                         className="p-1.5 rounded-md text-[#c3c8c1] bg-[#111311] border border-[#434843]/30 hover:border-[#e9c349]/60"
                         title="Favoritar ativo"
                         aria-label="Favoritar ativo"
-                        onClick={(event) => {
+                        onClick={async (event) => {
                           event.stopPropagation();
                           if (!session) {
                             notifyAction('Entre com conta free para usar favoritos.');
@@ -471,13 +481,13 @@ export default function MarketData({ session }: MarketDataProps) {
                           }
                           const isFav = watchlist.includes(c.asset);
                           if (isFav) {
-                            removeWatchlistAsset(session.username, c.asset);
+                            await removeWatchlistAssetAsync(c.asset);
                             notifyAction(`${c.name} removido do portfolio.`);
                           } else {
-                            addWatchlistAsset(session.username, c.asset);
+                            await addWatchlistAssetAsync(c.asset);
                             notifyAction(`${c.name} adicionado ao portfolio.`);
                           }
-                          setWatchlist(getWatchlistAssets(session.username));
+                          setWatchlist(await getWatchlistAssetsAsync());
                         }}
                       >
                         <Star size={14} className={watchlist.includes(c.asset) ? 'fill-current text-[#e9c176]' : ''} />

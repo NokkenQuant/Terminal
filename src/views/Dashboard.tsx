@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { ArrowUpRight, ArrowDownRight, Filter, Download, Lock, Sparkles, Info, Stars, Sun, Truck, Ship, RefreshCw, Share2, Bolt, Bell, Maximize2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { NEWS } from '../constants';
-import { AuthSession, getWatchlistAssets } from '../auth';
+import { AuthSession, getWatchlistAssetsAsync } from '../auth';
 
 interface MarketDataItem {
   name: string;
@@ -93,11 +93,19 @@ export default function Dashboard({ session }: DashboardProps) {
   }, []);
 
   useEffect(() => {
-    if (!session) {
-      setWatchlist([]);
-      return;
-    }
-    setWatchlist(getWatchlistAssets(session.username));
+    const load = async () => {
+      if (!session) {
+        setWatchlist([]);
+        return;
+      }
+      try {
+        setWatchlist(await getWatchlistAssetsAsync());
+      } catch (error) {
+        console.error(error);
+        setWatchlist([]);
+      }
+    };
+    load();
   }, [session]);
 
   const watchlistMarketData = useMemo(
