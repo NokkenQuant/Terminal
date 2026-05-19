@@ -43,6 +43,48 @@ export default async function handler(req: any, res: any) {
     const userId = tokenData?.user?.id;
     let plan: "free" | "premium" = "free";
     if (userId) {
+      const meta = tokenData?.user?.user_metadata || {};
+      // Garante consistencia caso profile/subscription nao tenham sido gravados no signup.
+      await fetch(`${supabaseUrl}/rest/v1/profiles?on_conflict=id`, {
+        method: "POST",
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=merge-duplicates",
+        },
+        body: JSON.stringify([
+          {
+            id: userId,
+            full_name: meta?.full_name || meta?.username || String(username).trim(),
+            email: String(username).trim().toLowerCase(),
+            age: Number(meta?.age || 18),
+            sex: meta?.sex === "Feminino" ? "Feminino" : "Masculino",
+            phone: meta?.phone || "(00) 00000-0000",
+            city: meta?.city || "Sao Paulo",
+            state: meta?.state || "SP",
+            country: meta?.country || "Brasil",
+          },
+        ]),
+      });
+
+      await fetch(`${supabaseUrl}/rest/v1/subscriptions?on_conflict=user_id,plan`, {
+        method: "POST",
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=merge-duplicates",
+        },
+        body: JSON.stringify([
+          {
+            user_id: userId,
+            plan: "free",
+            status: "active",
+          },
+        ]),
+      });
+
       const subsResp = await fetch(
         `${supabaseUrl}/rest/v1/subscriptions?select=plan,status&user_id=eq.${userId}&status=eq.active&order=updated_at.desc&limit=1`,
         {

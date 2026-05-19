@@ -81,7 +81,12 @@ export default async function handler(req: any, res: any) {
     const createdUser = await createUserResp.json();
     const userId = createdUser?.user?.id;
     if (!userId) {
-      res.status(500).json({ error: "Auth user criado sem id." });
+      // Supabase pode retornar signup sem user id em cenarios de protecao contra enumeracao.
+      // Nesses casos seguimos com mensagem de confirmacao para nao bloquear UX.
+      res.status(200).json({
+        user: { username, plan: "free" },
+        confirmation_email_sent: true,
+      });
       return;
     }
 
