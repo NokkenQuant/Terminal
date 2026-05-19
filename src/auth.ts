@@ -115,7 +115,7 @@ export async function login(username: string, password: string): Promise<AuthSes
   return session;
 }
 
-export async function registerFreeAccount(input: RegisterInput): Promise<AuthSession> {
+export async function registerFreeAccount(input: RegisterInput): Promise<void> {
   const response = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -125,15 +125,7 @@ export async function registerFreeAccount(input: RegisterInput): Promise<AuthSes
     const body = await response.json().catch(() => ({}));
     throw new Error(body?.error || "Falha ao registrar no Supabase.");
   }
-  const payload = await response.json();
-  const session: AuthSession = {
-    username: payload?.user?.username || input.username.trim(),
-    plan: payload?.user?.plan || "free",
-    token: crypto.randomUUID(),
-    loggedAt: new Date().toISOString(),
-  };
-  saveJson(SESSION_KEY, session);
-  return session;
+  return;
 }
 
 export function addWatchlistAsset(username: string, asset: string): void {

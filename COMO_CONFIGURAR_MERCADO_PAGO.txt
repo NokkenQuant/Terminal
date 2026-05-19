@@ -1,0 +1,116 @@
+COMO CONFIGURAR MERCADO PAGO (AGRI TERMINAL)
+============================================
+
+1) PRE-REQUISITOS
+-----------------
+- Conta no Mercado Pago (com acesso a credenciais).
+- Backend rodando com server.ts deste projeto.
+- Tabelas Supabase criadas (profiles, subscriptions, watchlists, price_alerts).
+- Variaveis SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY configuradas.
+
+
+2) VARIAVEIS DE AMBIENTE
+------------------------
+No arquivo .env.local (ou no ambiente de deploy), configurar:
+
+MP_ACCESS_TOKEN="SEU_ACCESS_TOKEN_MERCADO_PAGO"
+MP_WEBHOOK_SECRET="SEGREDO_WEBHOOK_OPCIONAL"
+MP_PREMIUM_AMOUNT="49.90"
+MP_CURRENCY="BRL"
+APP_BASE_URL="http://localhost:3000"
+
+Observacoes:
+- Em producao, APP_BASE_URL deve ser a URL publica real.
+- Nao commitar tokens reais no GitHub.
+
+
+3) ENDPOINTS JA DISPONIVEIS NO PROJETO
+--------------------------------------
+- POST /api/payments/mercadopago/checkout
+  Cria preferencia de pagamento premium e retorna init_point.
+
+- POST /api/payments/mercadopago/webhook
+  Recebe notificacao de pagamento.
+  Quando status = approved, ativa premium no Supabase (subscriptions).
+
+
+4) CONFIGURAR WEBHOOK NO MERCADO PAGO
+-------------------------------------
+No painel do Mercado Pago:
+1. Ir em Integracoes > Webhooks (ou Notificacoes).
+2. Adicionar URL:
+   https://SEU_DOMINIO/api/payments/mercadopago/webhook
+3. Selecionar evento de pagamento (payment).
+4. Salvar configuracao.
+
+Importante:
+- URL precisa ser publica (localhost nao recebe webhook externo sem tunel).
+- Para testes locais, usar ngrok/cloudflared e apontar webhook para URL do tunel.
+
+
+5) TESTE EM SANDBOX (RECOMENDADO)
+---------------------------------
+1. Definir MP_ACCESS_TOKEN de sandbox.
+2. Fazer login na plataforma com usuario valido.
+3. Chamar POST /api/payments/mercadopago/checkout com Authorization Bearer.
+4. Abrir init_point retornado.
+5. Concluir pagamento de teste.
+6. Verificar logs do backend:
+   "Premium ativado para user_id=..."
+7. Conferir no Supabase:
+   tabela subscriptions com plan='premium' e status='active'.
+
+
+6) TESTE RAPIDO DE API (EXEMPLO)
+--------------------------------
+Requisicao:
+
+POST /api/payments/mercadopago/checkout
+Headers:
+  Authorization: Bearer <token_da_sessao_usuario>
+  Content-Type: application/json
+Body:
+  {}
+
+Resposta esperada:
+{
+  "init_point": "...",
+  "sandbox_init_point": "...",
+  "preference_id": "..."
+}
+
+
+7) PRODUCAO (GO-LIVE)
+---------------------
+1. Trocar MP_ACCESS_TOKEN de sandbox para producao.
+2. Confirmar APP_BASE_URL de producao.
+3. Confirmar webhook apontando para dominio de producao.
+4. Validar 1 pagamento real de baixo valor.
+5. Confirmar upgrade premium no Supabase.
+
+
+8) CHECKLIST DE SEGURANCA
+-------------------------
+- Nao expor MP_ACCESS_TOKEN no frontend.
+- Webhook somente no backend.
+- Validar assinatura do webhook (proximo passo recomendado).
+- Logar apenas dados necessarios (sem PII sensivel em excesso).
+- Rotacionar credenciais em caso de suspeita.
+
+
+9) TROUBLESHOOTING
+------------------
+Problema: checkout nao cria preferencia
+- Verificar MP_ACCESS_TOKEN e conectividade.
+- Verificar logs do backend.
+
+Problema: pagamento aprovado, mas nao ativa premium
+- Verificar se webhook chegou no endpoint.
+- Verificar se evento e payment.
+- Verificar se user_id veio em metadata/external_reference.
+- Verificar permissao do SUPABASE_SERVICE_ROLE_KEY.
+
+Problema: webhook nao chega
+- URL publica invalida/inacessivel.
+- Evento errado selecionado no painel do Mercado Pago.
+

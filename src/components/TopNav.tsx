@@ -28,6 +28,7 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
   const [country, setCountry] = useState("Brasil");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
@@ -44,9 +45,11 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
   const submit = async () => {
     setLoading(true);
     setError("");
+    setSuccess("");
     try {
       if (mode === "login") {
         await onLogin(username, password);
+        setShowAuthModal(false);
       } else {
         if (!emailRegex.test(email.trim())) throw new Error("Email invalido.");
         if (!phoneRegex.test(phone.trim())) throw new Error("Telefone invalido. Use formato (DD) 99999-9999.");
@@ -64,6 +67,10 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
           state,
           country,
         });
+        setMode("login");
+        setSuccess("Cadastro criado. Verifique seu e-mail e confirme a conta antes de entrar.");
+        setPassword("");
+        return;
       }
       setShowAuthModal(false);
     } catch (err) {
@@ -156,6 +163,7 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
                 </>
               )}
               {error && <p className="text-xs text-[#ffb4ab]">{error}</p>}
+              {success && <p className="text-xs text-[#a1d494]">{success}</p>}
             </div>
             <div className="mt-4 flex gap-2">
               <button onClick={submit} disabled={loading} className="flex-1 rounded-lg bg-[#a1d494] px-3 py-2 text-xs font-bold text-[#0a3909] disabled:opacity-70">

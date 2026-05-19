@@ -29,8 +29,7 @@ export default function App() {
   };
 
   const onRegister = async (input: RegisterInput) => {
-    const authSession = await registerFreeAccount(input);
-    setSession(authSession);
+    await registerFreeAccount(input);
   };
 
   const onLogout = () => {

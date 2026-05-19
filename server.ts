@@ -35,7 +35,16 @@ async function startServer() {
   const getSupabaseEnv = () => {
     const supabaseUrl = process.env.SUPABASE_URL || "";
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-    return { supabaseUrl, serviceRoleKey };
+    const anonKey = process.env.SUPABASE_ANON_KEY || "";
+    return { supabaseUrl, serviceRoleKey, anonKey };
+  };
+
+  const getMercadoPagoEnv = () => {
+    const accessToken = process.env.MP_ACCESS_TOKEN || "";
+    const webhookSecret = process.env.MP_WEBHOOK_SECRET || "";
+    const planAmount = Number(process.env.MP_PREMIUM_AMOUNT || "49.90");
+    const currency = process.env.MP_CURRENCY || "BRL";
+    return { accessToken, webhookSecret, planAmount, currency };
   };
 
   const resolveUserIdFromToken = async (token: string): Promise<string | null> => {
@@ -52,11 +61,42 @@ async function startServer() {
     return authUser?.id || null;
   };
 
+  const setPremiumSubscription = async (userId: string, source: string) => {
+    const { supabaseUrl, serviceRoleKey } = getSupabaseEnv();
+    const renewal = new Date();
+    renewal.setDate(renewal.getDate() + 30);
+    const renewalDate = renewal.toISOString().slice(0, 10);
+
+    const resp = await fetch(`${supabaseUrl}/rest/v1/subscriptions?on_conflict=user_id,plan`, {
+      method: "POST",
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=representation",
+      },
+      body: JSON.stringify([
+        {
+          user_id: userId,
+          plan: "premium",
+          status: "active",
+          renewal_date: renewalDate,
+          gateway_customer_id: source,
+        },
+      ]),
+    });
+
+    if (!resp.ok) {
+      const errorBody = await resp.text();
+      throw new Error(`Falha ao atualizar assinatura premium: ${errorBody}`);
+    }
+  };
+
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { supabaseUrl, serviceRoleKey } = getSupabaseEnv();
-      if (!supabaseUrl || !serviceRoleKey) {
-        res.status(500).json({ error: "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY nao configurados." });
+      const { supabaseUrl, serviceRoleKey, anonKey } = getSupabaseEnv();
+      if (!supabaseUrl || !serviceRoleKey || !anonKey) {
+        res.status(500).json({ error: "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY/SUPABASE_ANON_KEY nao configurados." });
         return;
       }
 
@@ -110,21 +150,23 @@ async function startServer() {
         return;
       }
 
-      const createUserResp = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      const emailRedirectTo = `${process.env.APP_BASE_URL || "http://localhost:3000"}/`;
+      const createUserResp = await fetch(`${supabaseUrl}/auth/v1/signup`, {
         method: "POST",
         headers: {
-          apikey: serviceRoleKey,
-          Authorization: `Bearer ${serviceRoleKey}`,
+          apikey: anonKey,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: String(email).trim().toLowerCase(),
           password,
-          email_confirm: true,
-          user_metadata: {
+          data: {
             username: String(username).trim(),
             full_name: String(fullName).trim(),
             plan: "free",
+          },
+          options: {
+            emailRedirectTo,
           },
         }),
       });
@@ -136,7 +178,7 @@ async function startServer() {
       }
 
       const createdUser = await createUserResp.json();
-      const userId = createdUser?.id;
+      const userId = createdUser?.user?.id;
       if (!userId) {
         res.status(500).json({ error: "Auth user criado sem id." });
         return;
@@ -193,6 +235,7 @@ async function startServer() {
           username,
           plan: "free",
         },
+        confirmation_email_sent: true,
       });
     } catch (error) {
       console.error("Auth register error:", error);
@@ -335,6 +378,110 @@ async function startServer() {
     } catch (error) {
       console.error("Watchlist get error:", error);
       res.status(500).json({ error: "Falha ao carregar watchlist." });
+    }
+  });
+
+  app.post("/api/payments/mercadopago/checkout", async (req, res) => {
+    try {
+      const { accessToken, planAmount, currency } = getMercadoPagoEnv();
+      if (!accessToken) {
+        return res.status(500).json({ error: "MP_ACCESS_TOKEN nao configurado." });
+      }
+
+      const authHeader = String(req.headers.authorization || "");
+      const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!token) return res.status(401).json({ error: "Token ausente." });
+      const userId = await resolveUserIdFromToken(token);
+      if (!userId) return res.status(401).json({ error: "Token invalido." });
+
+      const frontendBaseUrl = process.env.APP_BASE_URL || "http://localhost:3000";
+      const preferencePayload = {
+        items: [
+          {
+            title: "Plano Premium Agro Terminal",
+            quantity: 1,
+            currency_id: currency,
+            unit_price: planAmount,
+          },
+        ],
+        external_reference: userId,
+        metadata: {
+          user_id: userId,
+          plan: "premium",
+          source: "agro-terminal",
+        },
+        back_urls: {
+          success: `${frontendBaseUrl}/premium?status=success`,
+          pending: `${frontendBaseUrl}/premium?status=pending`,
+          failure: `${frontendBaseUrl}/premium?status=failure`,
+        },
+        auto_return: "approved",
+      };
+
+      const mpResp = await fetch("https://api.mercadopago.com/checkout/preferences", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(preferencePayload),
+      });
+
+      if (!mpResp.ok) {
+        const errorBody = await mpResp.text();
+        return res.status(500).json({ error: `Falha ao criar checkout Mercado Pago: ${errorBody}` });
+      }
+
+      const mpData = await mpResp.json();
+      res.json({
+        init_point: mpData?.init_point || "",
+        sandbox_init_point: mpData?.sandbox_init_point || "",
+        preference_id: mpData?.id || "",
+      });
+    } catch (error) {
+      console.error("Mercado Pago checkout error:", error);
+      res.status(500).json({ error: "Falha ao iniciar checkout Mercado Pago." });
+    }
+  });
+
+  app.post("/api/payments/mercadopago/webhook", async (req, res) => {
+    try {
+      const { accessToken } = getMercadoPagoEnv();
+      if (!accessToken) return res.status(500).json({ error: "MP_ACCESS_TOKEN nao configurado." });
+
+      const topic = String(req.query.topic || req.body?.type || "");
+      const dataId = String(req.query["data.id"] || req.body?.data?.id || "");
+
+      // Ack rapido para evitar retries agressivos.
+      res.status(200).json({ ok: true });
+
+      if (!dataId || (topic && topic !== "payment")) return;
+
+      const paymentResp = await fetch(`https://api.mercadopago.com/v1/payments/${dataId}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!paymentResp.ok) {
+        const txt = await paymentResp.text();
+        console.error("Mercado Pago payment fetch failed:", txt);
+        return;
+      }
+
+      const payment = await paymentResp.json();
+      const status = String(payment?.status || "");
+      if (status !== "approved") return;
+
+      const userId = String(payment?.metadata?.user_id || payment?.external_reference || "");
+      if (!userId) {
+        console.error("Mercado Pago webhook sem user_id/external_reference");
+        return;
+      }
+
+      await setPremiumSubscription(userId, `mercadopago_payment_${dataId}`);
+      console.log(`Premium ativado para user_id=${userId} via Mercado Pago payment=${dataId}`);
+    } catch (error) {
+      console.error("Mercado Pago webhook error:", error);
     }
   });
 
