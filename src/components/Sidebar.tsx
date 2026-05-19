@@ -10,8 +10,15 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentView, onViewChange, session }: SidebarProps) {
+  type MenuItem = {
+    id: View;
+    label: string;
+    icon: React.ComponentType<any>;
+    locked?: boolean;
+    disabled?: boolean;
+  };
   const isAnalysisLocked = !session || session.plan !== "premium";
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { id: "dashboard", label: "Painel", icon: LayoutDashboard },
     { id: "market-data", label: "Dados de Mercado", icon: BarChart3 },
     { id: "physical-market", label: "Mercado Fisico", icon: BarChart3 },

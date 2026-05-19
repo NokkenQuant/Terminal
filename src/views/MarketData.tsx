@@ -453,7 +453,7 @@ export default function MarketData({ session }: MarketDataProps) {
                         className="p-1.5 rounded-md text-[#c3c8c1] bg-[#111311] border border-[#434843]/30 hover:border-[#e9c349]/60"
                         title="Criar alerta"
                         aria-label="Criar alerta"
-                        onClick={(event) => {
+                        onClick={async (event) => {
                           event.stopPropagation();
                           if (!session) {
                             notifyAction('Entre com conta free para criar alerta.');
