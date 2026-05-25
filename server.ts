@@ -298,8 +298,8 @@ async function startServer() {
       const userId = tokenData?.user?.id;
       let plan: "free" | "premium" = "free";
       if (userId) {
-        const subsResp = await fetch(
-          `${supabaseUrl}/rest/v1/subscriptions?select=plan,status&user_id=eq.${userId}&status=eq.active&order=updated_at.desc&limit=1`,
+      const subsResp = await fetch(
+        `${supabaseUrl}/rest/v1/subscriptions?select=plan,status&user_id=eq.${userId}&status=eq.active&order=updated_at.desc&limit=20`,
           {
             method: "GET",
             headers: {
@@ -310,7 +310,7 @@ async function startServer() {
         );
         if (subsResp.ok) {
           const subs = await subsResp.json();
-          if (Array.isArray(subs) && subs[0]?.plan === "premium") {
+          if (Array.isArray(subs) && subs.some((s: any) => s?.plan === "premium" && s?.status === "active")) {
             plan = "premium";
           }
         }

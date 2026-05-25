@@ -86,7 +86,7 @@ export default async function handler(req: any, res: any) {
       });
 
       const subsResp = await fetch(
-        `${supabaseUrl}/rest/v1/subscriptions?select=plan,status&user_id=eq.${userId}&status=eq.active&order=updated_at.desc&limit=1`,
+        `${supabaseUrl}/rest/v1/subscriptions?select=plan,status&user_id=eq.${userId}&status=eq.active&order=updated_at.desc&limit=20`,
         {
           method: "GET",
           headers: {
@@ -97,7 +97,9 @@ export default async function handler(req: any, res: any) {
       );
       if (subsResp.ok) {
         const subs = await subsResp.json();
-        if (Array.isArray(subs) && subs[0]?.plan === "premium") plan = "premium";
+        if (Array.isArray(subs) && subs.some((s: any) => s?.plan === "premium" && s?.status === "active")) {
+          plan = "premium";
+        }
       }
     }
 

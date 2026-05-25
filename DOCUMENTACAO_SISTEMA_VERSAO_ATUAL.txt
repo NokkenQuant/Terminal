@@ -1,0 +1,268 @@
+DOCUMENTACAO DO SISTEMA - VERSAO ATUAL (AGRI TERMINAL)
+======================================================
+
+Data de referencia: 2026-05-25
+Repositorio/app: agri-terminal-v2.4/Terminal
+
+----------------------------------------------------------------
+1) VISÃO GERAL DA ARQUITETURA
+----------------------------------------------------------------
+- Frontend: React + Vite (SPA), pasta `src/`
+- Backend local dev: `server.ts` (Express + Vite middleware)
+- Backend producao (Vercel): rotas serverless em `api/`
+- Banco de dados e autenticacao: Supabase
+- Pagamento premium: base preparada para Mercado Pago (backend)
+
+Fluxo geral:
+1. Frontend chama rotas `/api/...`
+2. Rotas serverless/Express consultam Supabase
+3. Dados retornam para views (Dashboard, MarketData, PhysicalMarket etc.)
+4. Auth/cadastro usa Supabase Auth + tabela `profiles`
+
+----------------------------------------------------------------
+2) FONTES DE DADOS UTILIZADAS
+----------------------------------------------------------------
+2.1 Supabase (principal fonte)
+Variaveis esperadas:
+- SUPABASE_URL
+- SUPABASE_SERVICE_ROLE_KEY
+- SUPABASE_ANON_KEY
+
+Tabelas/views principais consumidas:
+- `public.agro_prices`
+  Uso: cotações historicas por ativo (open/high/low/close/volume).
+- `public.agro_latest_prices` (view)
+  Uso: ultimo preco por ativo para cards/tabela de mercado.
+- `public.agro_metrics_analysis`
+  Uso: metricas e sinais da analise de ativos.
+- `public.agro_physical_prices`
+  Uso: historico do mercado fisico (CEPEA) por serie.
+- `public.painel_fisico`
+  Uso: snapshot consolidado do mercado fisico.
+- `public.dim_assets` (se disponível)
+  Uso: enriquecimento por macro grupo/familia/regiao.
+- `public.profiles`
+  Uso: dados do perfil do usuario cadastrado.
+- `public.watchlists`
+  Uso: portfolio/lista de acompanhamento do usuario.
+- `public.price_alerts`
+  Uso: alertas de preco por usuario.
+- `public.subscriptions`
+  Uso: plano do usuario (`free`/`premium`) e status.
+
+2.2 Supabase Auth
+- Cadastro: `auth/v1/signup` com confirmação por e-mail.
+- Login: `auth/v1/token?grant_type=password`.
+- Perfil autenticado: `auth/v1/user`.
+
+2.3 Mercado Pago (integracao backend pronta)
+- Criacao de checkout: `/api/payments/mercadopago/checkout`
+- Webhook: `/api/payments/mercadopago/webhook`
+- Ativa premium em `subscriptions` quando pagamento aprovado.
+
+----------------------------------------------------------------
+3) ESQUEMA SQL (RESUMO)
+----------------------------------------------------------------
+Arquivo base SQL de seguranca:
+- `sql/supabase_secure_baseline.sql`
+
+3.1 Tabela `profiles`
+Campos:
+- id (uuid, PK, referencia `auth.users.id`)
+- full_name (text)
+- email (text)
+- age (int, check 13..120)
+- sex (text)
+- phone (text)
+- city (text)
+- state (text)
+- country (text, default 'Brasil')
+- created_at (timestamptz)
+- updated_at (timestamptz)
+
+Seguranca:
+- RLS habilitada
+- Policies por dono (`auth.uid() = id`)
+
+3.2 Tabela `watchlists`
+Campos:
+- id (uuid, PK)
+- user_id (uuid, FK auth.users)
+- asset_code (text)
+- created_at (timestamptz)
+
+Regras:
+- unique (user_id, asset_code)
+- RLS por dono (`auth.uid() = user_id`)
+
+3.3 Tabela `price_alerts`
+Campos:
+- id (uuid, PK)
+- user_id (uuid, FK auth.users)
+- asset_code (text)
+- target_price (numeric > 0)
+- direction (text: 'above'/'below')
+- expires_at (timestamptz)
+- active (boolean)
+- created_at (timestamptz)
+- triggered_at (timestamptz, opcional)
+
+Regras:
+- check de expiracao > created_at
+- RLS por dono (`auth.uid() = user_id`)
+
+3.4 Tabela `subscriptions`
+Campos:
+- id (uuid, PK)
+- user_id (uuid, FK auth.users)
+- plan (text: free/premium)
+- status (text: active/paused/canceled/trialing/past_due)
+- renewal_date (date)
+- gateway_customer_id (text)
+- gateway_subscription_id (text)
+- created_at, updated_at (timestamptz)
+
+Regras:
+- unique (user_id, plan)
+- RLS por dono (`auth.uid() = user_id`)
+
+----------------------------------------------------------------
+4) DOCUMENTACAO DOS ARQUIVOS DO TERMINAL (SITE)
+----------------------------------------------------------------
+4.1 Entrada e composicao do app
+- `src/main.tsx`
+  Bootstrap React.
+- `src/App.tsx`
+  Roteamento interno por view, controle de sessao e bloqueio premium.
+- `src/types.ts`
+  Tipos globais de view/modelos simples.
+
+4.2 Camada de autenticacao/usuario
+- `src/auth.ts`
+  Cliente de auth para frontend:
+  - login/register via `/api/auth/...`
+  - sessao local (token/plano)
+  - CRUD async de watchlist e alertas via API.
+- `src/components/TopNav.tsx`
+  Modal de login/cadastro com validacoes:
+  - email valido
+  - telefone no formato (DD) 99999-9999
+  - sexo em lista fechada
+  - UF e cidade por lista.
+- `src/views/Profile.tsx`
+  Exibe perfil do usuario, watchlist, alertas e status de pagamento.
+
+4.3 Navegacao e layout
+- `src/components/Sidebar.tsx`
+  Menu lateral, bloqueio visual/funcional da aba premium.
+- `src/index.css`
+  estilos globais.
+
+4.4 Views principais
+- `src/views/Dashboard.tsx`
+  Painel principal (usa watchlist do usuario; vazio por padrao sem favoritos).
+- `src/views/MarketData.tsx`
+  Tabela de mercado, historico, favoritos, criacao de alertas.
+- `src/views/PhysicalMarket.tsx`
+  Mercado fisico com subviews (CEPEA ativo; CONAB/Internacional/Clima placeholders).
+- `src/views/Analysis.tsx`
+  Analise de ativos (acesso premium).
+- `src/views/Premium.tsx`
+  Area premium e gatilhos de upgrade.
+- `src/views/Pricing.tsx`
+  Pagina de precificacao/upgrade.
+
+4.5 Dados de apoio frontend
+- `src/data/brLocations.ts`
+  Lista de UFs e cidades para validacao/selecao de cadastro.
+- `src/data/macroGroups.ts`
+  Macro grupos do mercado.
+- `src/data/cepeaLinks.ts`
+  Links de download/consulta CEPEA por commodity.
+- `src/constants.ts`
+  Conteudos estáticos (ex.: news mockadas).
+- `src/hooks/useSharedMacroGroup.ts`
+  Estado compartilhado de macro grupo.
+- `src/components/MacroGroupSelector.tsx`
+  Componente de filtro por macro grupo.
+
+4.6 API serverless (producao Vercel)
+- `api/market-data.ts`
+  Retorna dados consolidados de mercado.
+- `api/historical/[symbol].ts`
+  Serie historica por ativo.
+- `api/analysis.ts`
+  Cards de analise por macro grupo.
+- `api/analysis/[symbol].ts`
+  Analise detalhada de ativo.
+- `api/physical-market.ts`
+  Snapshot mercado fisico.
+- `api/physical-market/history.ts`
+  Historico mercado fisico.
+- `api/auth/register.ts`
+  Cadastro com confirmacao de e-mail + profile/subscription.
+- `api/auth/login.ts`
+  Login via Supabase Auth.
+- `api/auth/profile.ts`
+  Dados de perfil autenticado.
+
+4.7 Backend local (desenvolvimento)
+- `server.ts`
+  Rotas equivalentes para desenvolvimento local + integracoes de pagamento.
+  Observacao: em producao, Vercel usa preferencialmente `api/*`.
+
+4.8 Camada de acesso Supabase (dados de negocio)
+- `lib/supabase-data.ts`
+  Funcoes de leitura e transformacao:
+  - getMarketData
+  - getHistorical
+  - getAnalysis
+  - getAnalysisByMacroGroup
+  - getPhysicalMarketData
+  - getPhysicalMarketHistory
+
+----------------------------------------------------------------
+5) VALIDACOES DE CADASTRO (VERSAO ATUAL)
+----------------------------------------------------------------
+Obrigatorias:
+- username (min 4)
+- password (min 4)
+- fullName
+- email valido
+- idade 13..120
+- sexo: Masculino/Feminino
+- telefone: (DD) 99999-9999 ou (DD) 9999-9999
+- estado (UF valida)
+- cidade compativel com UF selecionada
+
+----------------------------------------------------------------
+6) VARIAVEIS DE AMBIENTE RELEVANTES
+----------------------------------------------------------------
+Supabase:
+- SUPABASE_URL
+- SUPABASE_SERVICE_ROLE_KEY
+- SUPABASE_ANON_KEY
+- SUPABASE_PRICES_TABLE (opcional, default agro_prices)
+- SUPABASE_METRICS_TABLE (opcional, default agro_metrics_analysis)
+- SUPABASE_PHYSICAL_TABLE (opcional, default agro_physical_prices)
+- SUPABASE_PHYSICAL_PANEL_TABLE (opcional, default painel_fisico)
+- SUPABASE_LATEST_PRICES_VIEW (opcional, default agro_latest_prices)
+
+Auth/URL:
+- APP_BASE_URL (usado no redirect de confirmacao por e-mail)
+
+Mercado Pago:
+- MP_ACCESS_TOKEN
+- MP_WEBHOOK_SECRET (opcional na versao atual)
+- MP_PREMIUM_AMOUNT
+- MP_CURRENCY
+
+----------------------------------------------------------------
+7) OBSERVACOES OPERACIONAIS
+----------------------------------------------------------------
+- Em producao, confirmar Redirect URLs no Supabase Auth para APP_BASE_URL.
+- Watchlist/alertas/cadastro/login devem trafegar apenas via API backend.
+- Service role nunca deve ser exposta no frontend.
+- Para premium, a fonte de verdade e `subscriptions`.
+
+Fim do documento.
