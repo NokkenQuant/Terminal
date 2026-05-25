@@ -123,6 +123,9 @@ export async function registerFreeAccount(input: RegisterInput): Promise<void> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
+    if (body?.code === "email_exists_or_pending") {
+      throw new Error("Este e-mail ja esta cadastrado ou pendente de confirmacao. Verifique sua caixa de entrada.");
+    }
     throw new Error(body?.error || "Falha ao registrar no Supabase.");
   }
   return;

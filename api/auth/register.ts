@@ -74,6 +74,18 @@ export default async function handler(req: any, res: any) {
 
     if (!createUserResp.ok) {
       const errorBody = await createUserResp.text();
+      const normalized = errorBody.toLowerCase();
+      if (
+        normalized.includes("already registered") ||
+        normalized.includes("already been registered") ||
+        normalized.includes("user already registered")
+      ) {
+        res.status(400).json({
+          error: "Este e-mail ja esta cadastrado ou aguardando confirmacao. Verifique sua caixa de entrada ou use outro e-mail.",
+          code: "email_exists_or_pending",
+        });
+        return;
+      }
       res.status(400).json({ error: `Falha ao criar usuario no Auth: ${errorBody}` });
       return;
     }
