@@ -31,7 +31,7 @@ export default function Sidebar({ currentView, onViewChange, session }: SidebarP
     <aside className="fixed left-0 top-0 flex flex-col h-full py-4 bg-[#1a1c1a] w-64 pt-16 z-40 hidden md:flex">
       <div className="px-6 mb-8">
         <h2 className="text-lg font-black text-[#e9c176] font-headline">Dados Agro</h2>
-        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">Inteligencia Profunda do Solo</p>
+        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">Informação na sua mão </p>
       </div>
 
       <nav className="flex-1 space-y-1">
