@@ -65,14 +65,14 @@ export default function Sidebar({ currentView, onViewChange, session }: SidebarP
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-1">
               <Stars size={14} className="text-[#e9c176] fill-current" />
-              <p className="text-xs font-bold text-[#e9c176]">Harvest+ Pronto</p>
+              <p className="text-xs font-bold text-[#e9c176]">Plano Premium</p>
             </div>
             <p className="text-[10px] text-[#c3c8c1] mb-3">Desbloqueie Analise de Ativos premium</p>
             <button
               onClick={() => onViewChange("pricing")}
               className="bg-[#a1d494] text-[#0a3909] text-[11px] font-bold py-1.5 px-3 rounded-md w-full hover:brightness-110 transition-all"
             >
-              Upgrade para Harvest+
+              Upgrade para Premium
             </button>
           </div>
         </div>
@@ -80,7 +80,7 @@ export default function Sidebar({ currentView, onViewChange, session }: SidebarP
         <div className="flex flex-col gap-1 border-t border-[#434843]/20 pt-4">
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <Settings size={14} />
-            <span className="text-xs">Configuracoes</span>
+            <span className="text-xs">Configurações</span>
           </div>
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <HelpCircle size={14} />
