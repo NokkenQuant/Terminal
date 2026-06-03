@@ -1,0 +1,11 @@
+<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>DuAgro.pro - Monochrome Icon</title>
+  <desc>Monochrome DuAgro.pro icon for use on brand green backgrounds</desc>
+  <rect x="0" y="0" width="80" height="80" rx="16" fill="#A1D494"/>
+  <path d="M 40 14 C 26 14 16 24 18.5 33 C 20 39 26 43 40 43 C 54 43 60 39 61.5 33 C 64 24 54 14 40 14 Z" fill="#3a6e35" opacity="0.4"/>
+  <path d="M 40 40 C 32 29 17 27 16.5 33 C 16 39 23 43 40 43 Z" fill="#0A3909"/>
+  <path d="M 40 40 C 48 29 63 27 63.5 33 C 64 39 57 43 40 43 Z" fill="#0A3909" opacity="0.75"/>
+  <line x1="40" y1="43" x2="40" y2="56" stroke="#0A3909" stroke-width="1.8" stroke-linecap="round"/>
+  <polyline points="10,36 18,28 25,32 32,22 39,26 47,18 57,22" fill="none" stroke="#0A3909" stroke-width="1.3" opacity="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="47" cy="18" r="3" fill="#0A3909" opacity="0.7"/>
+</svg>

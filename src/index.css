@@ -6,9 +6,27 @@
   --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
+html {
+  background: #0d0f0d;
+}
+
+:root {
+  color-scheme: dark;
+}
+
 @layer base {
   body {
-    @apply bg-[#121412] text-[#e2e3df] font-body;
+    @apply bg-[#0d0f0d] text-[#e2e3df] font-body antialiased;
+    background-image:
+      radial-gradient(circle at top left, rgba(161, 212, 148, 0.14), transparent 28%),
+      radial-gradient(circle at top right, rgba(161, 212, 148, 0.08), transparent 24%),
+      linear-gradient(180deg, #121412 0%, #0d0f0d 100%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: rgba(161, 212, 148, 0.28);
+    color: #e2e3df;
   }
 }
 
@@ -21,4 +39,3 @@
     scrollbar-width: none;
   }
 }
-

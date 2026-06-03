@@ -85,7 +85,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#121412] text-[#e2e3df] font-body selection:bg-[#a1d494]/30">
+    <div className="relative min-h-screen overflow-hidden bg-[#0d0f0d] text-[#e2e3df] font-body">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(161,212,148,0.12),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(34,58,32,0.3),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(67,72,67,0.11)_1px,transparent_1px),linear-gradient(90deg,rgba(67,72,67,0.11)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:radial-gradient(circle_at_center,black,transparent_84%)]" />
       <TopNav
         currentView={currentView}
         onViewChange={goToView}
@@ -95,15 +97,15 @@ export default function App() {
         onLogout={onLogout}
       />
 
-      <div className="flex pt-14 h-screen overflow-hidden">
+      <div className="relative z-10 flex pt-14 h-screen overflow-hidden">
         <Sidebar currentView={currentView} onViewChange={goToView} session={session} />
 
-        <main className="flex-1 ml-0 md:ml-64 p-4 pb-24 md:pb-6 lg:p-6 overflow-y-auto bg-[#0d0f0d] scrollbar-hide">
+        <main className="flex-1 ml-0 md:ml-64 p-4 pb-24 md:pb-6 lg:p-6 overflow-y-auto bg-transparent scrollbar-hide">
           {renderView()}
         </main>
       </div>
 
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#1a1c1a] h-16 flex items-center justify-around z-50 border-t border-[#434843]/20">
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#101210]/95 backdrop-blur-xl h-16 flex items-center justify-around z-50 border-t border-[#434843]/20">
         <button
           onClick={() => goToView("dashboard")}
           className={`min-w-12 min-h-12 flex flex-col items-center justify-center gap-1 rounded-lg ${currentView === "dashboard" ? "text-[#a1d494]" : "text-[#c3c8c1] opacity-70"}`}

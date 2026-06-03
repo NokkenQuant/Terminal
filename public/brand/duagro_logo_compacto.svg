@@ -1,0 +1,12 @@
+<svg width="400" height="60" viewBox="0 0 400 60" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>DuAgro.pro - Compact Logo</title>
+  <desc>Compact DuAgro.pro logo for navbar and topbar</desc>
+  <g transform="translate(0, 8)">
+    <rect x="0" y="0" width="44" height="44" rx="8" fill="#0D0F0D" stroke="#A1D494" stroke-width="1"/>
+    <path d="M 22 6 C 16 6 11 11 12.5 16.5 C 13.5 20 17 22 22 22 C 27 22 30.5 20 31.5 16.5 C 33 11 28 6 22 6 Z" fill="#1E201E"/>
+    <path d="M 22 20.5 C 17 13 10.5 11.5 10 15.5 C 9.5 19.5 13.5 22 22 22 Z" fill="#A1D494"/>
+    <path d="M 22 20.5 C 27 13 33.5 11.5 34 15.5 C 34.5 19.5 30.5 22 22 22 Z" fill="#A1D494" opacity="0.70"/>
+    <line x1="22" y1="22" x2="22" y2="29" stroke="#A1D494" stroke-width="1.1" stroke-linecap="round"/>
+  </g>
+  <text x="56" y="42" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="42" font-weight="300" letter-spacing="-2" fill="#9AA899">du<tspan font-weight="700" fill="#A1D494" letter-spacing="-2">AGRO</tspan><tspan font-size="16" font-weight="300" fill="#A1D494" opacity="0.45" letter-spacing="0">.pro</tspan></text>
+</svg>

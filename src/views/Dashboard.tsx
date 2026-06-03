@@ -332,10 +332,10 @@ export default function Dashboard({ session }: DashboardProps) {
                 <div className="flex-1">
                   <div className="flex justify-between items-end mb-2">
                     <span className="text-3xl font-headline font-bold text-[#e2e3df]">28,5C</span>
-                    <span className="text-xs text-[#e9c176]">Risco de Estiagem: 42%</span>
+                    <span className="text-xs text-[#a1d494]">Risco de Estiagem: 42%</span>
                   </div>
                   <div className="w-full bg-[#1a1c1a] h-2 rounded-full overflow-hidden">
-                    <div className="bg-[#e9c176] h-full" style={{ width: '42%' }}></div>
+                    <div className="bg-[#a1d494] h-full" style={{ width: '42%' }}></div>
                   </div>
                   <div className="mt-4 flex justify-between text-[10px] text-[#c3c8c1]">
                     <span>PREV. 7 DIAS: <strong className="text-[#e2e3df]">PANCADAS ISOLADAS</strong></span>
@@ -343,7 +343,7 @@ export default function Dashboard({ session }: DashboardProps) {
                   </div>
                 </div>
                 <div className="w-24 h-24 bg-[#292a28] rounded-full flex items-center justify-center border-4 border-[#a1d494]/20 relative">
-                  <Sun className="text-4xl text-[#e9c176]" />
+                  <Sun className="text-4xl text-[#a1d494]" />
                   <div className="absolute -top-1 -right-1 bg-[#ffb4ab] w-3 h-3 rounded-full animate-pulse"></div>
                 </div>
               </div>
@@ -382,10 +382,10 @@ export default function Dashboard({ session }: DashboardProps) {
               {NEWS.map((item) => (
                 <article key={item.id} className="group cursor-pointer">
                   <div className="flex items-start gap-3">
-                    <div className={`w-1.5 h-12 rounded-full mt-1 ${item.isPremium ? 'bg-[#e9c176]' : 'bg-[#a1d494]/20'}`}></div>
+                    <div className={`w-1.5 h-12 rounded-full mt-1 ${item.isPremium ? 'bg-[#a1d494]' : 'bg-[#a1d494]/20'}`}></div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[9px] font-bold uppercase ${item.isPremium ? 'text-[#e9c176]' : 'text-[#a1d494]'}`}>
+                        <span className={`text-[9px] font-bold uppercase ${item.isPremium ? 'text-[#a1d494]' : 'text-[#a1d494]'}`}>
                           {item.category}
                         </span>
                         <span className="text-[9px] text-[#c3c8c1] tabular-nums">{item.time}</span>
@@ -427,10 +427,10 @@ export default function Dashboard({ session }: DashboardProps) {
                   </article>
                 </div>
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1e201e]/60 backdrop-blur-[2px] rounded-xl p-6 text-center">
-                  <Lock className="text-4xl text-[#e9c176] mb-3 fill-current" />
+                  <Lock className="text-4xl text-[#a1d494] mb-3 fill-current" />
                   <h5 className="text-sm font-bold text-[#e2e3df] mb-2">Upgrade para Pro Wire</h5>
                   <p className="text-[10px] text-[#c3c8c1] mb-4">Obtenha notícias de nível institucional, sinais de especialistas e arquivos históricos ilimitados.</p>
-                  <button className="bg-[#e9c176] text-[#412d00] text-[11px] font-bold px-4 py-2 rounded-lg hover:scale-105 transition-transform active:opacity-80">
+                  <button className="bg-[#a1d494] text-[#0a3909] text-[11px] font-bold px-4 py-2 rounded-lg hover:scale-105 transition-transform active:opacity-80">
                     SEJA PREMIUM
                   </button>
                 </div>

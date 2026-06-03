@@ -100,7 +100,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           </p>
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <div className="w-2 h-2 rounded-full bg-[#e9c176]"></div>
+          <div className="w-2 h-2 rounded-full bg-[#a1d494]"></div>
           <p className="text-[10px] text-[#c3c8c1]">
             Volume: <span className="tabular-nums">{payload[0].payload.volume}</span>
           </p>
@@ -259,7 +259,7 @@ export default function Analysis() {
   const min24h = latestHistoryPoint?.low ?? null;
   const volume24h = latestHistoryPoint?.volume ?? null;
   const signalColor = (signal: 'compra' | 'venda' | 'neutro') =>
-    signal === 'compra' ? 'text-[#a1d494]' : signal === 'venda' ? 'text-[#ffb4ab]' : 'text-[#e9c176]';
+    signal === 'compra' ? 'text-[#a1d494]' : signal === 'venda' ? 'text-[#ffb4ab]' : 'text-[#c3c8c1]';
   const notifyAction = (message: string) => {
     setActionNotice(message);
     window.setTimeout(() => setActionNotice(''), 2500);
@@ -274,15 +274,15 @@ export default function Analysis() {
       {/* Secao de Cabecalho: Titulo do Ativo e Estatisticas Chave */}
       <section className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-[#1e201e] rounded-xl flex items-center justify-center border-b-2 border-[#e9c176]">
-            <CommodityIcon size={40} className="text-[#e9c176] fill-current" />
+          <div className="w-16 h-16 bg-[#1e201e] rounded-xl flex items-center justify-center border-b-2 border-[#a1d494]">
+            <CommodityIcon size={40} className="text-[#a1d494] fill-current" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-3xl font-extrabold font-headline tracking-tighter text-[#e2e3df]">
                 {(selectedMarketAsset?.name || selectedAsset).toUpperCase()}
               </h1>
-              <span className="bg-[#292a28] px-2 py-0.5 rounded text-[10px] font-bold text-[#e9c176] tracking-widest">
+              <span className="bg-[#292a28] px-2 py-0.5 rounded text-[10px] font-bold text-[#a1d494] tracking-widest">
                 {selectedMarketAsset?.ticker || '-'}
               </span>
             </div>
@@ -316,7 +316,7 @@ export default function Analysis() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto">
           {[
-            { label: 'Maxima 24h', val: max24h != null ? max24h.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-', color: 'text-[#e9c176]' },
+            { label: 'Maxima 24h', val: max24h != null ? max24h.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-', color: 'text-[#a1d494]' },
             { label: 'Minima 24h', val: min24h != null ? min24h.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-', color: 'text-[#e2e3df]' },
             { label: 'Volume', val: volume24h != null ? volume24h.toLocaleString('pt-BR') : '-', color: 'text-[#e2e3df]' },
             { label: 'Variação', val: `${(selectedMarketAsset?.change || 0) >= 0 ? '+' : ''}${(selectedMarketAsset?.change ?? 0).toFixed(2)} (${(selectedMarketAsset?.changePercent || 0) >= 0 ? '+' : ''}${(selectedMarketAsset?.changePercent ?? 0).toFixed(2)}%)`, color: (selectedMarketAsset?.change || 0) >= 0 ? 'text-[#a1d494]' : 'text-[#ffb4ab]', border: `border-b-2 ${(selectedMarketAsset?.change || 0) >= 0 ? 'border-[#a1d494]' : 'border-[#ffb4ab]'}` }
@@ -390,7 +390,7 @@ export default function Analysis() {
               </div>
             </div>
             <div className="flex-1 relative bg-[#0d0f0d] p-6">
-              <div className="absolute top-4 right-4 z-10 bg-[#3a2800] text-[#e9c176] text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest">
+              <div className="absolute top-4 right-4 z-10 bg-[#043405] text-[#a1d494] text-[10px] font-black px-2 py-1 rounded uppercase tracking-widest">
                 Gráfico demonstrativo
               </div>
               <ResponsiveContainer width="100%" height="100%">
@@ -431,12 +431,12 @@ export default function Analysis() {
                     fill="url(#colorPrice)" 
                     animationDuration={300}
                   />
-                  <ReferenceLine y={1180} stroke="#e9c176" strokeDasharray="3 3" label={{ value: 'Resistencia', position: 'right', fill: '#e9c176', fontSize: 10 }} />
+                  <ReferenceLine y={1180} stroke="#a1d494" strokeDasharray="3 3" label={{ value: 'Resistencia', position: 'right', fill: '#a1d494', fontSize: 10 }} />
                 </AreaChart>
               </ResponsiveContainer>
               
               <div className="flex flex-col gap-1 absolute top-10 left-10 bg-[#292a28]/80 backdrop-blur-md p-4 rounded-lg border-l-2 border-[#a1d494] pointer-events-none">
-                <span className="text-xs font-bold text-[#e9c176]">EMA(20): 1172,4</span>
+                <span className="text-xs font-bold text-[#a1d494]">EMA(20): 1172,4</span>
                 <span className="text-xs font-bold text-[#a1d494]">SMA(50): 1158,2</span>
                 <span className="text-xs font-bold text-[#c3c8c1]">RSI: 64,2 (Altista)</span>
               </div>
@@ -477,7 +477,7 @@ export default function Analysis() {
                       <td className="py-4 px-2 font-headline font-semibold">{row.m}</td>
                       <td className="py-4 px-2">{row.f}</td>
                       <td className="py-4 px-2">{row.p}</td>
-                      <td className="py-4 px-2 text-[#e9c176] font-bold">{row.fc}</td>
+                      <td className="py-4 px-2 text-[#a1d494] font-bold">{row.fc}</td>
                       <td className="py-4 px-2 text-[#a1d494] flex items-center gap-1">
                         <ArrowUp size={12} /> {row.y}
                       </td>
@@ -532,7 +532,7 @@ export default function Analysis() {
                     { label: 'Ativos', value: macroAnalysis.summary.total_assets, tone: 'text-[#e2e3df]' },
                     { label: 'Compra', value: macroAnalysis.summary.compra, tone: 'text-[#a1d494]' },
                     { label: 'Venda', value: macroAnalysis.summary.venda, tone: 'text-[#ffb4ab]' },
-                    { label: 'Neutro', value: macroAnalysis.summary.neutro, tone: 'text-[#e9c176]' },
+                    { label: 'Neutro', value: macroAnalysis.summary.neutro, tone: 'text-[#c3c8c1]' },
                   ].map((item) => (
                     <div key={item.label} className="bg-[#0d0f0d] rounded-lg border border-[#434843]/10 p-3">
                       <p className="text-[10px] uppercase font-bold text-[#c3c8c1] mb-1">{item.label}</p>
@@ -597,7 +597,7 @@ export default function Analysis() {
           <div className="bg-[#1e201e] p-6 rounded-xl border border-[#434843]/10">
             <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
               <h3 className="text-lg font-bold font-headline flex items-center gap-2 text-[#e2e3df]">
-                <Activity size={20} className="text-[#e9c176]" />
+                <Activity size={20} className="text-[#a1d494]" />
                 Métricas Quantitativas (Supabase)
               </h3>
               <div className="flex flex-wrap gap-3">
@@ -669,7 +669,7 @@ export default function Analysis() {
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-[#a1d494]/10 rounded-full blur-2xl group-hover:bg-[#a1d494]/20 transition-all"></div>
             <h3 className="text-sm font-bold font-headline mb-4 uppercase tracking-widest text-[#c3c8c1] flex justify-between items-center">
               Radar de Sentimento
-              <Star size={16} className="text-[#e9c176] fill-current" />
+              <Star size={16} className="text-[#a1d494] fill-current" />
             </h3>
             <div className="flex items-center justify-center py-8">
               <div className="relative w-40 h-40">
@@ -701,7 +701,7 @@ export default function Analysis() {
             <h3 className="text-sm font-bold font-headline mb-6 uppercase tracking-widest text-[#c3c8c1]">Monitor de Basis Regional</h3>
             <div className="space-y-6">
               {[
-                { loc: 'Porto de Paranagua (BRA)', val: '+$0,45', color: 'bg-[#e9c176]', text: 'text-[#e9c176]' },
+                { loc: 'Porto de Paranagua (BRA)', val: '+$0,45', color: 'bg-[#a1d494]', text: 'text-[#a1d494]' },
                 { loc: 'New Orleans (GULF)', val: '+$0,72', color: 'bg-[#a1d494]', text: 'text-[#a1d494]', offset: true },
                 { loc: 'Rosario (ARG)', val: '+$0,22', color: 'bg-[#c3c8c1]', text: 'text-[#e2e3df]' }
               ].map((b) => (
@@ -725,7 +725,7 @@ export default function Analysis() {
               referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-[#1e201e]/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
-              <Lock className="text-[#e9c176] text-4xl mb-2" size={32} />
+              <Lock className="text-[#a1d494] text-4xl mb-2" size={32} />
               <h4 className="text-sm font-bold text-[#e2e3df] mb-2">Relatorios de Inteligencia Profunda</h4>
               <p className="text-[10px] text-[#c3c8c1] mb-4 max-w-[200px]">Desbloqueie a modelagem preditiva de impacto climático para a safra atual.</p>
               <button className="bg-gradient-to-r from-[#a1d494] to-[#043405] text-[#e2e3df] px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-transform">

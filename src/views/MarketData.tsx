@@ -490,7 +490,7 @@ export default function MarketData({ session }: MarketDataProps) {
                           setWatchlist(await getWatchlistAssetsAsync());
                         }}
                       >
-                        <Star size={14} className={watchlist.includes(c.asset) ? 'fill-current text-[#e9c176]' : ''} />
+                        <Star size={14} className={watchlist.includes(c.asset) ? 'fill-current text-[#a1d494]' : ''} />
                       </button>
                     </div>
                   </td>
@@ -627,7 +627,7 @@ export default function MarketData({ session }: MarketDataProps) {
             </div>
             <div className="flex gap-4 group cursor-pointer">
               <div className="w-10 h-10 rounded-lg bg-[#3a2800]/30 flex items-center justify-center shrink-0">
-                <Star size={18} className="text-[#e9c176]" />
+                <Star size={18} className="text-[#a1d494]" />
               </div>
               <div>
                 <h4 className="text-sm font-bold text-[#e2e3df] leading-tight">Fraqueza na Base do Milho Argentino</h4>

@@ -1,0 +1,17 @@
+<svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>DuAgro.pro - Main Logo</title>
+  <desc>Main DuAgro.pro logo for dark surfaces</desc>
+  <rect width="600" height="200" rx="16" fill="#121412"/>
+  <g transform="translate(28, 56)">
+    <rect x="0" y="0" width="80" height="80" rx="14" fill="#0D0F0D" stroke="#A1D494" stroke-width="1.4"/>
+    <path d="M 40 14 C 26 14 16 24 18.5 33 C 20 39 26 43 40 43 C 54 43 60 39 61.5 33 C 64 24 54 14 40 14 Z" fill="#1E201E"/>
+    <path d="M 40 40 C 32 29 17 27 16.5 33 C 16 39 23 43 40 43 Z" fill="#A1D494"/>
+    <path d="M 40 40 C 48 29 63 27 63.5 33 C 64 39 57 43 40 43 Z" fill="#A1D494" opacity="0.70"/>
+    <line x1="40" y1="43" x2="40" y2="55" stroke="#A1D494" stroke-width="1.5" stroke-linecap="round"/>
+    <polyline points="10,36 18,28 25,32 32,22 39,26 47,18 56,22" fill="none" stroke="#E2E3DF" stroke-width="1.2" opacity="0.38" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="47" cy="18" r="2.8" fill="#A1D494"/>
+  </g>
+  <text x="130" y="128" font-family="'Cormorant Garamond', Georgia, 'Times New Roman', serif" font-size="86" font-weight="300" letter-spacing="-3" fill="#9AA899">du<tspan font-weight="700" fill="#A1D494" letter-spacing="-4">AGRO</tspan><tspan font-size="32" font-weight="300" fill="#A1D494" opacity="0.45" letter-spacing="0">.pro</tspan></text>
+  <line x1="130" y1="146" x2="572" y2="146" stroke="#2a2d2a" stroke-width="0.6"/>
+  <text x="130" y="168" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="400" fill="#434843" letter-spacing="3">INTELLIGENCIA QUANTITATIVA PARA O AGRO</text>
+</svg>

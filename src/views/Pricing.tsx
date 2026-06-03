@@ -107,7 +107,7 @@ export default function Pricing() {
                   <span className="text-sm font-medium text-[#e2e3df]">Suporte Concierge Prioritário 24/7</span>
                 </li>
               </ul>
-              <button className="w-full py-4 bg-[#e9c176] text-[#412d00] font-black rounded text-lg tracking-tight shadow-xl shadow-[#e9c176]/10 hover:scale-[1.02] active:scale-95 transition-all">
+              <button className="w-full py-4 bg-[#a1d494] text-[#0a3909] font-black rounded text-lg tracking-tight shadow-xl shadow-[#a1d494]/10 hover:scale-[1.02] active:scale-95 transition-all">
                 UPGRADE PARA HARVEST+
               </button>
             </div>
@@ -118,7 +118,7 @@ export default function Pricing() {
         <div className="md:col-span-4 space-y-6">
           {/* Card de Cobertura de Dados */}
           <div className="bg-[#1a1c1a] p-6 rounded-lg border border-[#434843]/10">
-            <h4 className="text-[#e9c176] font-bold text-xs uppercase mb-4 flex items-center gap-2">
+            <h4 className="text-[#a1d494] font-bold text-xs uppercase mb-4 flex items-center gap-2">
               <BarChart3 size={14} />
               Cobertura de Dados
             </h4>
@@ -145,7 +145,7 @@ export default function Pricing() {
             <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-[#a1d494]/20 blur-3xl group-hover:bg-[#a1d494]/40 transition-all"></div>
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-4">
-                <BrainCircuit className="text-[#e9c176]" size={20} />
+                <BrainCircuit className="text-[#a1d494]" size={20} />
                 <h4 className="font-bold text-[#e2e3df]">Modelo de Colheita Preditiva</h4>
               </div>
               <p className="text-xs text-[#c3c8c1] leading-relaxed mb-4">
@@ -186,7 +186,7 @@ export default function Pricing() {
                 referrerPolicy="no-referrer"
               />
               <div className="relative z-10">
-                <Lock className="text-[#e9c176] text-4xl mb-4 mx-auto fill-current" size={40} />
+                <Lock className="text-[#a1d494] text-4xl mb-4 mx-auto fill-current" size={40} />
                 <h4 className="font-bold text-lg mb-2 text-[#e2e3df]">{mod.title}</h4>
                 <p className="text-xs text-[#c3c8c1]">{mod.desc}</p>
               </div>

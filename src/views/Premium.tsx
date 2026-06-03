@@ -13,7 +13,7 @@ export default function Premium() {
       <div className="mb-8 flex justify-between items-end">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <span className="bg-[#e9c176] text-[#261900] px-2 py-0.5 rounded text-[10px] font-black tracking-widest uppercase">Premium</span>
+            <span className="bg-[#a1d494] text-[#0a3909] px-2 py-0.5 rounded text-[10px] font-black tracking-widest uppercase">Premium</span>
             <h2 className="font-headline text-3xl font-extrabold text-[#e2e3df] tracking-tight">Terminal de Inteligência</h2>
           </div>
           <p className="text-[#c3c8c1] font-medium">Análises proprietárias de camada profunda e modelagem preditiva de safra.</p>
@@ -72,7 +72,7 @@ export default function Premium() {
                 <span className="text-[10px] font-bold text-[#c3c8c1]">Risco de Seca Severa</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#e9c176]"></div>
+                <div className="w-3 h-3 rounded-full bg-[#a1d494]"></div>
                 <span className="text-[10px] font-bold text-[#c3c8c1]">Zona de Volatilidade de Produtividade</span>
               </div>
               <div className="flex items-center gap-2">
@@ -92,9 +92,9 @@ export default function Premium() {
               <span className="text-xs text-[#a1d494] font-bold">14 Novos Sinais</span>
             </div>
             <div className="space-y-6">
-              <div className="relative pl-4 border-l-2 border-[#e9c176]">
+              <div className="relative pl-4 border-l-2 border-[#a1d494]">
                 <div className="flex justify-between mb-1">
-                  <span className="text-[10px] font-bold text-[#e9c176] uppercase">Alto Impacto</span>
+                  <span className="text-[10px] font-bold text-[#a1d494] uppercase">Alto Impacto</span>
                   <span className="text-[10px] text-[#c3c8c1]">2m atrás</span>
                 </div>
                 <h4 className="text-sm font-bold text-[#e2e3df] mb-1 leading-snug">Interrupção na Cadeia de Suprimentos do Mar Negro Prevista</h4>
@@ -143,16 +143,16 @@ export default function Premium() {
                 ))}
               </div>
             </div>
-            <div className="bg-[#0d0f0d] p-4 rounded-lg flex items-center justify-between border-l-2 border-[#e9c176]">
+            <div className="bg-[#0d0f0d] p-4 rounded-lg flex items-center justify-between border-l-2 border-[#a1d494]">
               <div>
-                <p className="text-[10px] font-bold text-[#e9c176] uppercase tracking-widest">Equilíbrio de pH do Solo</p>
+                <p className="text-[10px] font-bold text-[#a1d494] uppercase tracking-widest">Equilíbrio de pH do Solo</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold text-[#e2e3df] tabular-nums">6,4</span>
-                  <span className="text-xs text-[#e9c176] font-bold">pH</span>
+                  <span className="text-xs text-[#a1d494] font-bold">pH</span>
                 </div>
               </div>
               <div className="text-[10px] font-bold text-[#c3c8c1] text-right">
-                <p className="text-[#e9c176]">FAIXA IDEAL</p>
+                <p className="text-[#a1d494]">FAIXA IDEAL</p>
                 <p>6,2 - 6,8</p>
               </div>
             </div>
@@ -161,10 +161,10 @@ export default function Premium() {
 
         {/* Motor de Previsão de Colheita */}
         <div className="col-span-12 md:col-span-7 bg-[#1e201e] rounded-xl p-6 relative overflow-hidden border border-[#434843]/10">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#e9c176]/5 blur-3xl rounded-full"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#a1d494]/5 blur-3xl rounded-full"></div>
           <div className="flex items-center justify-between mb-6 relative z-10">
             <div className="flex items-center gap-3">
-              <Activity className="text-[#e9c176]" size={20} />
+              <Activity className="text-[#a1d494]" size={20} />
               <h3 className="font-headline font-bold text-[#e2e3df]">Motor de Previsão de Colheita</h3>
             </div>
             <div className="text-[10px] font-bold text-[#c3c8c1] flex items-center gap-2">
@@ -229,7 +229,7 @@ export default function Premium() {
       </div>
 
       {/* Botão de Ação Flutuante */}
-      <button className="fixed bottom-8 right-8 h-14 w-14 bg-[#e9c176] text-[#261900] rounded-full shadow-[0_20px_40px_rgba(233,195,118,0.3)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50">
+      <button className="fixed bottom-8 right-8 h-14 w-14 bg-[#a1d494] text-[#0a3909] rounded-full shadow-[0_20px_40px_rgba(161,212,148,0.3)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50">
         <Bolt size={24} className="fill-current" />
       </button>
     </motion.div>

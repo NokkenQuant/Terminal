@@ -17,6 +17,7 @@ export default function Sidebar({ currentView, onViewChange, session }: SidebarP
     locked?: boolean;
     disabled?: boolean;
   };
+
   const isAnalysisLocked = !session || session.plan !== "premium";
   const menuItems: MenuItem[] = [
     { id: "dashboard", label: "Painel", icon: LayoutDashboard },
@@ -28,10 +29,10 @@ export default function Sidebar({ currentView, onViewChange, session }: SidebarP
   ];
 
   return (
-    <aside className="fixed left-0 top-0 flex flex-col h-full py-4 bg-[#1a1c1a] w-64 pt-16 z-40 hidden md:flex">
-      <div className="px-6 mb-8">
-        <h2 className="text-lg font-black text-[#e9c176] font-headline">Dados Agro</h2>
-        <p className="text-[10px] uppercase tracking-widest text-[#c3c8c1] opacity-60">Informação na sua mão </p>
+    <aside className="fixed left-0 top-0 flex flex-col h-full py-4 bg-[#101210]/95 backdrop-blur-xl w-64 pt-16 z-40 hidden md:flex border-r border-[#434843]/15">
+      <div className="px-5 mb-8">
+        <img src="/brand/duagro_logo_compacto.svg" alt="AGRI-TERMINAL" className="w-44 h-auto" />
+        <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-[#c3c8c1] opacity-70">Inteligencia para o agro</p>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -43,10 +44,13 @@ export default function Sidebar({ currentView, onViewChange, session }: SidebarP
               key={item.id}
               onClick={() => !item.disabled && !item.locked && onViewChange(item.id as View)}
               title={item.disabled ? "Em breve" : item.locked ? "Disponivel apenas no plano premium" : item.label}
-              className={`
-                flex items-center px-6 py-3 gap-3 transition-all
-                ${isActive ? "bg-[#1e201e] text-[#a1d494] rounded-r-full mr-4" : item.disabled || item.locked ? "text-[#e2e3df] opacity-35 cursor-not-allowed" : "text-[#e2e3df] opacity-60 hover:text-[#a1d494] hover:bg-[#292a28] cursor-pointer"}
-              `}
+              className={`flex items-center px-6 py-3 gap-3 transition-all ${
+                isActive
+                  ? "bg-[#1e201e] text-[#a1d494] rounded-r-full mr-4"
+                  : item.disabled || item.locked
+                    ? "text-[#e2e3df] opacity-35 cursor-not-allowed"
+                    : "text-[#e2e3df] opacity-60 hover:text-[#a1d494] hover:bg-[#292a28] cursor-pointer"
+              }`}
             >
               <Icon size={18} className={isActive ? "fill-current" : ""} />
               <span className="text-sm font-medium">{item.label}</span>
@@ -61,11 +65,11 @@ export default function Sidebar({ currentView, onViewChange, session }: SidebarP
       </nav>
 
       <div className="px-4 mt-auto">
-        <div className="bg-gradient-to-br from-[#043405] to-[#292a28] p-4 rounded-xl mb-6 relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-[#043405] to-[#1a1c1a] p-4 rounded-xl mb-6 relative overflow-hidden group border border-[#a1d494]/15">
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-1">
-              <Stars size={14} className="text-[#e9c176] fill-current" />
-              <p className="text-xs font-bold text-[#e9c176]">Plano Premium</p>
+              <Stars size={14} className="text-[#a1d494] fill-current" />
+              <p className="text-xs font-bold text-[#a1d494]">Plano Premium</p>
             </div>
             <p className="text-[10px] text-[#c3c8c1] mb-3">Desbloqueie Analise de Ativos premium</p>
             <button
@@ -80,7 +84,7 @@ export default function Sidebar({ currentView, onViewChange, session }: SidebarP
         <div className="flex flex-col gap-1 border-t border-[#434843]/20 pt-4">
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <Settings size={14} />
-            <span className="text-xs">Configurações</span>
+            <span className="text-xs">Configuracoes</span>
           </div>
           <div className="text-[#e2e3df] opacity-60 hover:text-[#a1d494] transition-all flex items-center px-2 py-2 gap-3 cursor-pointer">
             <HelpCircle size={14} />

@@ -82,9 +82,20 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
 
   return (
     <>
-      <nav className="flex justify-between items-center px-6 w-full h-14 z-50 bg-[#121412] fixed top-0 left-0 border-b border-[#434843]/10">
+      <nav className="flex justify-between items-center px-4 md:px-6 w-full h-14 z-50 bg-[#101210]/90 backdrop-blur-xl fixed top-0 left-0 border-b border-[#434843]/20">
         <div className="flex items-center gap-8">
-          <span className="text-xl font-bold tracking-tight text-[#a1d494] font-headline">AGRI-TERMINAL</span>
+          <button onClick={() => onViewChange("dashboard")} className="flex items-center gap-3 group">
+            <img
+              src="/brand/duagro_logo_compacto.svg"
+              alt="AGRI-TERMINAL"
+              className="hidden sm:block h-8 w-auto transition-transform duration-300 group-hover:scale-[1.01]"
+            />
+            <img
+              src="/brand/duagro_icone.svg"
+              alt="AGRI-TERMINAL"
+              className="h-8 w-8 sm:hidden rounded-lg border border-[#434843]/20 bg-[#0d0f0d]"
+            />
+          </button>
           <div className="hidden md:flex items-center gap-6">
             <button
               onClick={() => onViewChange("dashboard")}
@@ -121,7 +132,14 @@ export default function TopNav({ currentView, onViewChange, session, onLogin, on
 
       {showAuthModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-xl rounded-2xl border border-[#434843]/25 bg-[#1e201e] p-5 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-xl rounded-2xl border border-[#434843]/25 bg-[#1e201e] p-5 max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/40">
+            <div className="mb-4 flex items-center justify-between gap-4 border-b border-[#434843]/15 pb-4">
+              <img src="/brand/duagro_logo_principal.svg" alt="AGRI-TERMINAL" className="h-16 w-auto max-w-full" />
+              <div className="hidden sm:block text-right">
+                <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#a1d494]">Acesso ao terminal</p>
+                <p className="text-xs text-[#c3c8c1]">Conta free ou premium, com a mesma linguagem visual do produto.</p>
+              </div>
+            </div>
             <h2 className="text-xl font-headline font-bold text-[#e2e3df] mb-1">{mode === "login" ? "Entrar na conta" : "Criar conta free"}</h2>
             <div className="space-y-3">
               <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={mode === "login" ? "Email" : "Usuario"} className="w-full rounded-lg bg-[#0d0f0d] border border-[#434843]/20 px-3 py-2 text-sm text-[#e2e3df]" />
